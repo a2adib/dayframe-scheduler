@@ -6,23 +6,33 @@ protocol QueueCaching {
     func load() -> [Post]
 }
 
-/// SwiftData-backed queue cache: replaced on every successful fetch, served
-/// when the network fails (offline read-only).
-struct SwiftDataQueueCache: QueueCaching {
-    private let container: ModelContainer
+/// SwiftData-backed queue cache: lazily initialized on first access,
+/// replaced on every successful fetch, served when the network fails (offline read-only).
+final class SwiftDataQueueCache: QueueCaching, @unchecked Sendable {
+    private let inMemory: Bool
+    private var _container: ModelContainer?
+    private let lock = NSLock()
 
-    init(inMemory: Bool = false) {
+    private var container: ModelContainer {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = _container {
+            return existing
+        }
         let configuration = ModelConfiguration(isStoredInMemoryOnly: inMemory)
-        container = (try? ModelContainer(
+        let created = (try? ModelContainer(
             for: CachedPost.self,
             configurations: configuration
-        )) ?? {
-            let fallback = try! ModelContainer(
-                for: CachedPost.self,
-                configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-            )
-            return fallback
-        }()
+        )) ?? (try! ModelContainer(
+            for: CachedPost.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        ))
+        _container = created
+        return created
+    }
+
+    init(inMemory: Bool = false) {
+        self.inMemory = inMemory
     }
 
     func store(_ posts: [Post]) {

@@ -3,14 +3,7 @@
 // the retry/backoff policy (1/5/15 min, max 3 attempts). Permanent failures
 // mark the target failed; expired tokens flip the channel to `expired`.
 import { providerConfig, type Platform } from "../_shared/providers.ts";
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const SERVICE_HEADERS = {
-  apikey: SERVICE_KEY,
-  Authorization: `Bearer ${SERVICE_KEY}`,
-  "Content-Type": "application/json",
-};
+import { ensureFreshToken, expireChannel, SERVICE_HEADERS, requireServiceRole, signedMediaUrls, SUPABASE_URL } from "../_shared/backend.ts";
 
 const BACKOFF_MINUTES = [1, 5, 15];
 const MAX_ATTEMPTS = 3;
@@ -27,121 +20,11 @@ interface ClaimedTarget {
   media: { path: string; kind: "image" | "video" }[];
 }
 
-interface StoredToken {
-  access_token: string;
-  refresh_token: string | null;
-  expires_at: string;
-}
-
-interface TokenBundle {
-  accessToken: string;
-  refreshToken: string | null;
-  expiresAt: number;
-  secretId: string; // current secret id; changes after a refresh
-}
-
-class PublishError extends Error {
+export class PublishError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
   }
 }
-
-async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
-    method: "POST",
-    headers: SERVICE_HEADERS,
-    body: JSON.stringify(args),
-  });
-  if (!response.ok) throw new Error(`rpc ${name} failed: ${response.status}`);
-  return response.json() as Promise<T>;
-}
-
-function tokenEndpoint(platform: Platform): string {
-  const base = providerConfig(platform).apiBase;
-  return platform === "x" ? `${base}/2/oauth2/token` : platform === "linkedin" ? `${base}/oauth/v2/accessToken` : `${base}/access_token`;
-}
-
-async function refreshToken(platform: Platform, refresh: string): Promise<{ accessToken: string; refreshToken: string | null; expiresIn: number }> {
-  const config = providerConfig(platform);
-  const body = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh });
-  const headers: Record<string, string> = { "Content-Type": "application/x-www-form-urlencoded" };
-  if (platform === "x") {
-    headers["Authorization"] = "Basic " + btoa(`${config.clientId}:${config.clientSecret}`);
-    body.set("client_id", config.clientId!);
-  } else {
-    body.set("client_id", config.clientId!);
-    body.set("client_secret", config.clientSecret!);
-  }
-  const response = await fetch(tokenEndpoint(platform), { method: "POST", headers, body });
-  const data = await response.json();
-  if (!response.ok) throw new PublishError(`Token refresh failed: ${data.error ?? response.status}`, 401);
-  return { accessToken: data.access_token, refreshToken: data.refresh_token ?? refresh, expiresIn: data.expires_in ?? 3600 };
-}
-
-async function loadToken(target: ClaimedTarget): Promise<TokenBundle | null> {
-  const channels = await fetch(
-    `${SUPABASE_URL}/rest/v1/channels?id=eq.${target.channel_id}&select=id,token_secret_id,token_expires_at,status`,
-    { headers: SERVICE_HEADERS },
-  ).then((r) => r.json());
-  const channel = channels[0];
-  if (!channel?.token_secret_id) return null;
-  const secret = await rpc<string>("read_token_secret", { p_secret_id: channel.token_secret_id });
-  const parsed = JSON.parse(secret) as StoredToken;
-  return { accessToken: parsed.access_token, refreshToken: parsed.refresh_token, expiresAt: Date.parse(parsed.expires_at), secretId: channel.token_secret_id };
-}
-
-/// Persists a refreshed token: new vault secret + channel row update.
-async function saveRefreshedToken(channelId: string, bundle: TokenBundle, refreshed: { accessToken: string; refreshToken: string | null; expiresIn: number }): Promise<string> {
-  const expiresAt = new Date(Date.now() + refreshed.expiresIn * 1000).toISOString();
-  const newSecretId = await rpc<string>("store_token_secret", {
-    p_secret: JSON.stringify({ access_token: refreshed.accessToken, refresh_token: refreshed.refreshToken, expires_at: expiresAt }),
-  });
-  await fetch(`${SUPABASE_URL}/rest/v1/channels?id=eq.${channelId}`, {
-    method: "PATCH",
-    headers: SERVICE_HEADERS,
-    body: JSON.stringify({ token_secret_id: newSecretId, token_expires_at: expiresAt, status: "connected" }),
-  });
-  return newSecretId;
-}
-
-/// X tokens live 2 h, Instagram/LinkedIn 60 days: refresh well before expiry.
-async function ensureFreshToken(target: ClaimedTarget): Promise<TokenBundle | null> {
-  const bundle = await loadToken(target);
-  if (!bundle) return null;
-  const refreshWindowMs = target.platform === "x" ? 30 * 60 * 1000 : 7 * 86_400 * 1000;
-  if (bundle.expiresAt - Date.now() > refreshWindowMs) return bundle;
-  if (!bundle.refreshToken) return bundle; // nothing to refresh with; try as-is
-  try {
-    const refreshed = await refreshToken(target.platform, bundle.refreshToken);
-    bundle.accessToken = refreshed.accessToken;
-    bundle.refreshToken = refreshed.refreshToken;
-    bundle.expiresAt = Date.now() + refreshed.expiresIn * 1000;
-    bundle.secretId = await saveRefreshedToken(target.channel_id, bundle, refreshed);
-  } catch {
-    // Fall through: the publish attempt surfaces the auth error properly.
-  }
-  return bundle;
-}
-
-/// Signed URLs for private storage media (Instagram requires a public URL).
-async function signedMediaUrls(paths: string[]): Promise<Map<string, string>> {
-  const result = new Map<string, string>();
-  if (paths.length === 0) return result;
-  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/media`, {
-    method: "POST",
-    headers: SERVICE_HEADERS,
-    body: JSON.stringify({ expiresIn: 7 * 86_400, paths }),
-  });
-  if (!response.ok) throw new Error(`Could not sign media URLs: ${response.status}`);
-  const data = await response.json() as { signedURLs?: string[]; signedUrls?: string[] };
-  const urls = data.signedURLs ?? data.signedUrls ?? [];
-  paths.forEach((path, index) => {
-    if (urls[index]) result.set(path, `${SUPABASE_URL}/storage/v1${urls[index]}`);
-  });
-  return result;
-}
-
-// ── Platform publishers ──────────────────────────────────────────────────────
 
 async function publishInstagram(target: ClaimedTarget, token: string): Promise<string> {
   const base = providerConfig("instagram").apiBase;
@@ -150,15 +33,16 @@ async function publishInstagram(target: ClaimedTarget, token: string): Promise<s
   }
   const urls = await signedMediaUrls(target.media.map((m) => m.path));
   const caption = encodeURIComponent(target.body_override ?? target.body);
+  const imageAssets = target.media.filter((m) => m.kind === "image");
 
   const containers: string[] = [];
-  for (const asset of target.media.filter((m) => m.kind === "image")) {
+  for (const asset of imageAssets) {
     const url = urls.get(asset.path);
     if (!url) throw new PublishError("Media URL could not be signed.", 500);
     const response = await fetch(`${base}/v23.0/me/media`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ image_url: url, caption, is_carousel_item: containers.length > 0 || target.media.filter((m) => m.kind === "image").length > 1 }),
+      body: JSON.stringify({ image_url: url, caption, is_carousel_item: containers.length > 0 || imageAssets.length > 1 }),
     });
     const data = await response.json();
     if (!response.ok) throw new PublishError(data.error?.message ?? `Container failed (${response.status})`, response.status);
@@ -290,6 +174,47 @@ async function publishLinkedIn(target: ClaimedTarget, token: string, memberUrn: 
   return response.headers.get("x-restli-id") ?? response.headers.get("X-RestLi-Id") ?? "unknown";
 }
 
+async function publishFacebook(target: ClaimedTarget, token: string, pageId: string): Promise<string> {
+  const base = providerConfig("facebook").apiBase;
+  const text = target.body_override ?? target.body;
+  const images = target.media.filter((m) => m.kind === "image");
+
+  if (images.length > 0) {
+    const urls = await signedMediaUrls([images[0].path]);
+    const url = urls.get(images[0].path);
+    if (!url) throw new PublishError("Media URL could not be signed.", 500);
+
+    const response = await fetch(`${base}/v21.0/${pageId}/photos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url,
+        caption: text,
+        access_token: token,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new PublishError(data.error?.message ?? `Facebook photo publish failed (${response.status})`, response.status);
+    }
+    return data.post_id ?? data.id;
+  }
+
+  const response = await fetch(`${base}/v21.0/${pageId}/feed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: text,
+      access_token: token,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new PublishError(data.error?.message ?? `Facebook post failed (${response.status})`, response.status);
+  }
+  return data.id;
+}
+
 /// LinkedIn stores the member URN (from /v2/userinfo sub) as external_account_id.
 async function externalAccountId(channelId: string): Promise<string> {
   const rows = await fetch(`${SUPABASE_URL}/rest/v1/channels?id=eq.${channelId}&select=external_account_id`, {
@@ -340,23 +265,21 @@ async function markFailed(target: ClaimedTarget, attempts: number, message: stri
   }
 }
 
-async function expireChannel(channelId: string): Promise<void> {
-  await fetch(`${SUPABASE_URL}/rest/v1/channels?id=eq.${channelId}`, {
-    method: "PATCH",
-    headers: SERVICE_HEADERS,
-    body: JSON.stringify({ status: "expired" }),
-  });
-}
-
 Deno.serve(async (req) => {
-  const auth = req.headers.get("Authorization") ?? "";
-  if (auth !== `Bearer ${SERVICE_KEY}`) {
+  if (!requireServiceRole(req)) {
     return Response.json({ code: "unauthorized", message: "Service role required." }, { status: 401 });
   }
 
   let claimed: ClaimedTarget[];
   try {
-    claimed = await rpc<ClaimedTarget[]>("claim_due_targets", { p_limit: 10 });
+    claimed = await fetch(`${SUPABASE_URL}/rest/v1/rpc/claim_due_targets`, {
+      method: "POST",
+      headers: SERVICE_HEADERS,
+      body: JSON.stringify({ p_limit: 10 }),
+    }).then(async (r) => {
+      if (!r.ok) throw new Error(`claim_due_targets failed: ${r.status}`);
+      return r.json();
+    });
   } catch (error) {
     return Response.json({ code: "claim_failed", message: String(error) }, { status: 500 });
   }
@@ -367,7 +290,7 @@ Deno.serve(async (req) => {
 
   for (const target of claimed) {
     try {
-      const bundle = await ensureFreshToken(target);
+      const bundle = await ensureFreshToken(target.platform, target.channel_id);
       if (!bundle) throw new PublishError("Channel has no stored token.", 401);
 
       let externalId: string;
@@ -380,6 +303,13 @@ Deno.serve(async (req) => {
           break;
         case "linkedin":
           externalId = await publishLinkedIn(
+            target,
+            bundle.accessToken,
+            await externalAccountId(target.channel_id),
+          );
+          break;
+        case "facebook":
+          externalId = await publishFacebook(
             target,
             bundle.accessToken,
             await externalAccountId(target.channel_id),

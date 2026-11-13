@@ -62,9 +62,9 @@ Note on simulator (Phase 0): Xcode 27.2 is installed but no iOS simulator runtim
 - **Done when:** a scheduled post publishes to a real test account within 2 minutes, failures retry and surface correctly — verified end to end against a mock platform API; real-account verification pending credentials (see Decisions)
 
 ## Phase 6: Analytics
-- [ ] `refresh-metrics` function and tables populated
-- [ ] Wire Analytics screen to real data, range and channel filters
-- **Done when:** charts match platform data for a test account
+- [x] `refresh-metrics` function and tables populated
+- [x] Wire Analytics screen to real data, range and channel filters
+- **Done when:** charts match platform data for a test account — verified against the mock provider (exact numbers); real-account data pending credentials
 
 ## Phase 7: Notifications and Subscriptions
 - [ ] APNs setup, `send-push`, notification toggles
@@ -113,3 +113,5 @@ TikTok, YouTube, Facebook integrations; AI caption improvements; team workspaces
 - **Mock provider for local e2e (Phase 5):** `config.toml` `[edge_runtime.secrets]` points every platform API base at a mock provider server (scratchpad `mock_provider.py`, control file `/tmp/dayframe-mock-control` = ok/500/429/401), so the complete loop runs locally with dev credentials. Hosted environments set real credentials with `supabase secrets set`.
 - **Phase 5 verification results:** `supabase db reset` applies the migration cleanly. oauth-start → oauth-callback (mock exchange) → channel row created with Vault token. publish-due: published to the mock X API (`external_post_id = mock-tweet-1`, `posts.published_at` set); 500-failure → attempt 1 scheduled with +1 min backoff → escalates through +5 min to `failed` at attempt 3 with derived post status `failed`; 401 → channel `expired` and targets pause (claim filters `status = 'connected'`). pg_cron fires every minute and reaches the function (HTTP 200 in `net._http_response`). App: builds with zero warnings, all 3 device tests pass.
 - **Pending for real accounts (Phase 5):** publishing to real Instagram/X/LinkedIn accounts requires OAuth apps with approved products/permissions (Meta advanced access, X paid tier for usable post limits, LinkedIn "Share on LinkedIn" product) plus real credentials; the engine is credential-agnostic and was verified against the mock.
+- **Phase 6 refresh-metrics:** hourly cron job (`20261113140000_metrics.sql`) calls the new function; it pulls followers + per-post metrics for X (`/2/users/me` public_metrics, author timeline matched by tweet id) and Instagram (profile followers_count, per-media impressions + like/comment counts), writes `metrics_daily` (followers today; reach/engagement grouped per publish day) and `post_metrics` (merged by target). LinkedIn contributes zeros until partner-level analytics are approved (docs/integrations/linkedin.md). Shared token/refresh helpers moved to `supabase/functions/_shared/backend.ts` (used by both publish-due and refresh-metrics). The `metrics_daily` upsert includes `user_id` (NOT NULL — the first run silently wrote nothing until this was fixed; upserts now surface failures).
+- **Phase 6 app wiring:** `AnalyticsRepository.loadPublishedPerChannel` (real bar chart, was a hash-based fake), `loadTopPosts` implemented via `post_metrics` nested-join query, and stat-card trends computed from the first vs second half of the selected range. Range + channel filters operate on the live tables. Verified: refresh-metrics against the mock produced exactly the mock's numbers (800/1200 reach, 17/29 engagement, 5234 followers); app builds warning-free and all 3 device tests pass.

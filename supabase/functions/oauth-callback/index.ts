@@ -62,10 +62,28 @@ interface Identity {
   externalAccountId: string;
   handle?: string;
   displayName?: string;
+  pageAccessToken?: string;
 }
 
 async function fetchIdentity(platform: Platform, token: string): Promise<Identity> {
   const config = providerConfig(platform);
+  if (platform === "facebook") {
+    const response = await fetch(`${config.apiBase}/v21.0/me/accounts?fields=id,name,access_token`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error(`Could not load Facebook pages (${response.status}).`);
+    const data = await response.json();
+    if (!data.data || data.data.length === 0) {
+      throw new Error("No Facebook Page found. Please ensure your Facebook account manages a Page.");
+    }
+    const page = data.data[0];
+    return {
+      externalAccountId: page.id,
+      displayName: page.name,
+      handle: page.name,
+      pageAccessToken: page.access_token,
+    };
+  }
   if (platform === "x") {
     const response = await fetch(`${config.apiBase}/2/users/me`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -108,10 +126,11 @@ async function storeChannel(
   identity: Identity,
   token: TokenResult,
 ): Promise<void> {
-  // 1. Vault secret.
-  const expiresAt = new Date(Date.now() + token.expiresIn * 1000).toISOString();
+  // 1. Vault secret. Use page access token for Facebook if available.
+  const accessToken = identity.pageAccessToken ?? token.accessToken;
+  const expiresAt = new Date(Date.now() + (identity.pageAccessToken ? 365 * 86_400 * 1000 : token.expiresIn * 1000)).toISOString();
   const secret = JSON.stringify({
-    access_token: token.accessToken,
+    access_token: accessToken,
     refresh_token: token.refreshToken ?? null,
     expires_at: expiresAt,
   });

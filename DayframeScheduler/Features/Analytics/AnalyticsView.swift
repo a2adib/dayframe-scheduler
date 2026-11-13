@@ -38,10 +38,13 @@ struct AnalyticsView: View {
                 channelFilter(model: model)
 
                 let totals = model.totals
+                let followerTrend = model.trend(for: \.followers)
+                let reachTrend = model.trend(for: \.reach)
+                let engagementTrend = model.trend(for: \.engagement)
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DayframeSpacing.md) {
-                    StatCard(value: formatCount(totals.followers), label: "Followers", trend: .up, trendDelta: "+3%")
-                    StatCard(value: formatCount(totals.reach), label: "Reach", trend: .up, trendDelta: "+8%")
-                    StatCard(value: formatCount(totals.engagement), label: "Engagement", trend: .down, trendDelta: "-1%")
+                    StatCard(value: formatCount(totals.followers), label: "Followers", trend: followerTrend.direction, trendDelta: followerTrend.delta)
+                    StatCard(value: formatCount(totals.reach), label: "Reach", trend: reachTrend.direction, trendDelta: reachTrend.delta)
+                    StatCard(value: formatCount(totals.engagement), label: "Engagement", trend: engagementTrend.direction, trendDelta: engagementTrend.delta)
                     StatCard(value: formatCount(totals.clicks), label: "Clicks", trend: .none)
                 }
 

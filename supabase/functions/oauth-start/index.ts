@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   }
 
   const { platform } = await req.json().catch(() => ({ platform: null }));
-  if (platform !== "instagram" && platform !== "x" && platform !== "linkedin") {
+  if (platform !== "instagram" && platform !== "x" && platform !== "linkedin" && platform !== "facebook") {
     return Response.json({ code: "bad_request", message: "Unsupported platform." }, { status: 400, headers: CORS });
   }
 

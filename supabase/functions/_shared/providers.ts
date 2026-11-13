@@ -2,7 +2,7 @@
 // Secrets come from function env vars; *_API_BASE overrides exist only for
 // local end-to-end testing with a mock provider server (see docs/integrations/).
 
-export type Platform = "instagram" | "x" | "linkedin";
+export type Platform = "instagram" | "x" | "linkedin" | "facebook";
 
 export interface ProviderConfig {
   authorizeUrl: string;
@@ -19,6 +19,18 @@ export function providerConfig(platform: Platform): ProviderConfig {
   // the base redirects both; Instagram's token host differs and has its own
   // override. These overrides exist for local end-to-end testing only.
   switch (platform) {
+    case "facebook": {
+      const apiBase = Deno.env.get("FACEBOOK_API_BASE") ?? "https://graph.facebook.com";
+      return {
+        authorizeUrl: "https://www.facebook.com/v21.0/dialog/oauth",
+        tokenUrl: `${apiBase}/v21.0/oauth/access_token`,
+        scopes: "pages_show_list,pages_read_engagement,pages_manage_posts",
+        apiBase,
+        clientId: Deno.env.get("META_APP_ID"),
+        clientSecret: Deno.env.get("META_APP_SECRET"),
+        usesPkce: false,
+      };
+    }
     case "instagram": {
       const apiBase = Deno.env.get("INSTAGRAM_API_BASE") ?? "https://graph.instagram.com";
       return {

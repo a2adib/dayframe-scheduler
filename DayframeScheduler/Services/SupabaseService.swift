@@ -5,8 +5,8 @@ import Supabase
 /// environment (see .env.example); local defaults point at `supabase start`.
 enum SupabaseService {
     static func makeClient(
-        url: String = env("SUPABASE_URL", default: "http://127.0.0.1:54321"),
-        key: String = env("SUPABASE_ANON_KEY", default: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH")
+        url: String = AppConfig.supabaseURL.absoluteString,
+        key: String = AppConfig.supabaseAnonKey
     ) -> SupabaseClient {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase

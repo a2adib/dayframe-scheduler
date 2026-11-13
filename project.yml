@@ -9,6 +9,16 @@ packages:
     url: https://github.com/supabase/supabase-swift
     from: "2.55.6"
 settings:
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+      SWIFT_COMPILATION_MODE: singlefile
+      DEBUG_INFORMATION_FORMAT: dwarf
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      SWIFT_COMPILATION_MODE: wholemodule
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
   base:
     SWIFT_VERSION: "5.9"
     TARGETED_DEVICE_FAMILY: "1"
@@ -29,13 +39,17 @@ targets:
       path: DayframeScheduler/Info.plist
       properties:
         CFBundleDisplayName: Dayframe
+        CFBundleURLTypes:
+          - CFBundleURLName: com.dayframe.scheduler
+            CFBundleURLSchemes:
+              - dayframe
         UILaunchScreen: {}
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
-        NSLocalNetworkUsageDescription: Dayframe connects to the local development Supabase server.
+        NSLocalNetworkUsageDescription: Dayframe connects to the development Supabase server.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dayframe.scheduler
@@ -58,6 +72,10 @@ schemes:
       targets:
         DayframeScheduler: all
         DayframeSchedulerTests: [test]
+    run:
+      enableGPUValidationMode: disabled
+      environmentVariables:
+        OS_ACTIVITY_MODE: disable
     test:
       targets:
         - DayframeSchedulerTests

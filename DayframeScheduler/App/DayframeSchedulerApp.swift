@@ -19,7 +19,17 @@ struct DayframeSchedulerApp: App {
                 } else {
                     LaunchView()
                         .task {
-                            await environment.restoreSession()
+                            // Defensive timeout: prevent network hangs from blocking app launch
+                            await withTaskGroup(of: Void.self) { group in
+                                group.addTask {
+                                    await environment.restoreSession()
+                                }
+                                group.addTask {
+                                    try? await Task.sleep(nanoseconds: 2_500_000_000)
+                                }
+                                _ = await group.next()
+                                group.cancelAll()
+                            }
                             authChecked = true
                         }
                 }

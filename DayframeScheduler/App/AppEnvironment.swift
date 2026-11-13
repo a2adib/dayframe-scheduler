@@ -21,7 +21,7 @@ final class AppEnvironment {
         case live
     }
 
-    init(mode: BackendMode = BackendMode(rawValue: ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"] ?? "") ?? .mock) {
+    init(mode: BackendMode = BackendMode(rawValue: ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"] ?? "") ?? AppConfig.defaultBackendMode) {
         self.mode = mode
         switch mode {
         case .mock:

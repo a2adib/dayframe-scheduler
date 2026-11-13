@@ -24,4 +24,9 @@ final class MockAnalyticsRepository: AnalyticsRepository {
     func loadTopPosts(days: Int, limit: Int) async throws -> [TopPost] {
         Array(MockData.topPosts.prefix(limit))
     }
+
+    func loadPublishedPerChannel(days: Int) async throws -> [ChannelPostCount] {
+        MockData.channels.map { ChannelPostCount(platform: $0.platform, count: 3 + Int($0.platform.hashValue.magnitude % 5)) }
+            .sorted { $0.count > $1.count }
+    }
 }
