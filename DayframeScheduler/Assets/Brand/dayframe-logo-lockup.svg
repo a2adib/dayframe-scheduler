@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="120" viewBox="0 0 460 120">
+  <defs>
+    <linearGradient id="dayframeLockupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F6BFF"/>
+      <stop offset="100%" stop-color="#7B61FF"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10, 10)">
+    <rect x="7.75" y="7.75" width="84.5" height="84.5" rx="25" ry="25" fill="none" stroke="url(#dayframeLockupGradient)" stroke-width="12.5"/>
+    <circle cx="60.25" cy="40.25" r="10.75" fill="#FFB020"/>
+  </g>
+  <text x="132" y="79" font-family="-apple-system, 'SF Pro Rounded', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="52" letter-spacing="0">
+    <tspan fill="#111827">Day</tspan><tspan fill="#2C4BFF">frame</tspan>
+  </text>
+</svg>

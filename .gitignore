@@ -1,0 +1,16 @@
+# Command Code session artifacts
+.commandcode/
+.playwright-mcp/
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.ipa
+*.dSYM.zip
+
+# macOS
+.DS_Store
+
+# Secrets
+.env
