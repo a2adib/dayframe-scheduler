@@ -7,40 +7,72 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		008557CE42FB2276E1FA65CF /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 667C9893C2A542E10C0462E5 /* README.md */; };
 		00E7998F4E2D252D34E5A385 /* dayframe-logo-lockup.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1A7D92944EA5F33554D134F5 /* dayframe-logo-lockup.svg */; };
 		1208BC8FC5393FC815FF7DD9 /* DayframeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB2750EEABE6C00CB476418 /* DayframeLayout.swift */; };
 		1F198F0D0307F6FEF9C78A69 /* DayframeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ABDFCFAE13D44DECEEAD200 /* DayframeColor.swift */; };
 		294FA47DF469452D6572FC0F /* dayframe-mark.svg in Resources */ = {isa = PBXBuildFile; fileRef = 7719FCA482D45873C93E3A77 /* dayframe-mark.svg */; };
+		36FDD39F1300685B4FB1395E /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF91A9D01D99EFF0F6E358B4 /* PrimaryButton.swift */; };
+		3D6919087B62BDB618F11F97 /* CharacterCounterRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7A5D5077820AD4CB98FAA1 /* CharacterCounterRing.swift */; };
+		43A2780944F10744BC1DA599 /* TabPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D999482FF52B7365742EF084 /* TabPlaceholderView.swift */; };
+		49C171FA8D111593CB207986 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0E157B9A8092F80521B946 /* SectionHeader.swift */; };
 		663B0F264FC50DD3CA1403B9 /* DayframeWordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40FEAA3CB620D654EE724202 /* DayframeWordmark.swift */; };
 		69E40D7E3C77C45E0F72EFBA /* dayframe-app-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = E523AAD7C6B14DD8A4D1BF17 /* dayframe-app-icon.svg */; };
+		6D4FDA443DBDAF59F450709F /* StatusChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D95589CB8507C6990E8F10 /* StatusChip.swift */; };
+		6F78D4BF4F9154492B05AF10 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0281864B119EFFB4E84282BC /* Platform.swift */; };
+		717E49BAEE9CC45B145A6CC6 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8095EB05E008CE7C32E6E651 /* SecondaryButton.swift */; };
+		78BB10727D02C6CFE0567DEE /* PostCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 833A47B9B16F5413D9D168F7 /* PostCard.swift */; };
+		85504A013B1CFCD48FF2F53D /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 629B02F673F5AE485342F75D /* EmptyStateView.swift */; };
+		87108E7E3B10D07C8C125222 /* ChannelAvatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642A9BF2DFCE1041850F7FC0 /* ChannelAvatar.swift */; };
 		89A0E259F09F2C288C0BE6B8 /* DayframeLogoMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34282A91A58D13822609491E /* DayframeLogoMark.swift */; };
 		943AAD0C5C93D36DABD5DBDD /* LaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC1EF084842809001EFD18C /* LaunchView.swift */; };
 		A765CD043FDC6F6FEC3998E7 /* DayframeSchedulerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B39E0AA86FCB148F754DCA4 /* DayframeSchedulerApp.swift */; };
+		A83EB65D3A74089AD36432F8 /* FloatingCreateButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27AA2E379081B015754C90C9 /* FloatingCreateButton.swift */; };
 		C028156C0A825AE10A24B98C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 917D4E6405CB11EAEFF7640A /* Assets.xcassets */; };
+		C5304CA65A4CCD28A859ABD9 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2E32A8CC578830A4F4BAA7 /* MainTabView.swift */; };
+		C53D8104974DE13C71DA92B9 /* TimeSlotRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 875B1D1E0F759112BAF62931 /* TimeSlotRow.swift */; };
 		CD873F85A782C1C0BCE1B090 /* DayframeFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F4258A76B411F540D451BD /* DayframeFont.swift */; };
+		CE37DD489472A58BBC1B3522 /* StatCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160E7F445BBF004CBBB2550E /* StatCard.swift */; };
+		F5C3206E1FA69E7A6B93A337 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C82BC1D80C8A259F81B60A /* SkeletonView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		01958CB43BB16CAFAD2DE9AF /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		0281864B119EFFB4E84282BC /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		07ABB5C3168E3688BD30D9CA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		160E7F445BBF004CBBB2550E /* StatCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatCard.swift; sourceTree = "<group>"; };
 		1A7D92944EA5F33554D134F5 /* dayframe-logo-lockup.svg */ = {isa = PBXFileReference; path = "dayframe-logo-lockup.svg"; sourceTree = "<group>"; };
 		1B39E0AA86FCB148F754DCA4 /* DayframeSchedulerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeSchedulerApp.swift; sourceTree = "<group>"; };
+		1C7A5D5077820AD4CB98FAA1 /* CharacterCounterRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterCounterRing.swift; sourceTree = "<group>"; };
+		1D0E157B9A8092F80521B946 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		27AA2E379081B015754C90C9 /* FloatingCreateButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingCreateButton.swift; sourceTree = "<group>"; };
 		2DC1EF084842809001EFD18C /* LaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchView.swift; sourceTree = "<group>"; };
 		34282A91A58D13822609491E /* DayframeLogoMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeLogoMark.swift; sourceTree = "<group>"; };
 		40FEAA3CB620D654EE724202 /* DayframeWordmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeWordmark.swift; sourceTree = "<group>"; };
 		5010EDFB0B3ABB4DA0EB0234 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		5C89EEE4933BE03C39860193 /* DayframeScheduler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DayframeScheduler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		60F4258A76B411F540D451BD /* DayframeFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeFont.swift; sourceTree = "<group>"; };
+		629B02F673F5AE485342F75D /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		642A9BF2DFCE1041850F7FC0 /* ChannelAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelAvatar.swift; sourceTree = "<group>"; };
 		64A3188BD5F73F328EBABE3D /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		667C9893C2A542E10C0462E5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		68D95589CB8507C6990E8F10 /* StatusChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusChip.swift; sourceTree = "<group>"; };
 		6C909358FC78D53C0D3CB141 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		6DB2750EEABE6C00CB476418 /* DayframeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeLayout.swift; sourceTree = "<group>"; };
 		7719FCA482D45873C93E3A77 /* dayframe-mark.svg */ = {isa = PBXFileReference; path = "dayframe-mark.svg"; sourceTree = "<group>"; };
 		7BA7F58F5460BBE227713B27 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		8095EB05E008CE7C32E6E651 /* SecondaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButton.swift; sourceTree = "<group>"; };
+		833A47B9B16F5413D9D168F7 /* PostCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCard.swift; sourceTree = "<group>"; };
+		875B1D1E0F759112BAF62931 /* TimeSlotRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSlotRow.swift; sourceTree = "<group>"; };
+		89C82BC1D80C8A259F81B60A /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
 		917D4E6405CB11EAEFF7640A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9523792E502D4C1C30ACED43 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		9ABDFCFAE13D44DECEEAD200 /* DayframeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeColor.swift; sourceTree = "<group>"; };
 		BCA54046969BFEA385E87ECB /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		BF91A9D01D99EFF0F6E358B4 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
+		CC2E32A8CC578830A4F4BAA7 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		CD30E5F360E726D65563E2AE /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		D999482FF52B7365742EF084 /* TabPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabPlaceholderView.swift; sourceTree = "<group>"; };
 		DA37163AF0A341553191E46B /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		E523AAD7C6B14DD8A4D1BF17 /* dayframe-app-icon.svg */ = {isa = PBXFileReference; path = "dayframe-app-icon.svg"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -65,6 +97,18 @@
 		09C86C46576D993B7877BCBA /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				642A9BF2DFCE1041850F7FC0 /* ChannelAvatar.swift */,
+				1C7A5D5077820AD4CB98FAA1 /* CharacterCounterRing.swift */,
+				629B02F673F5AE485342F75D /* EmptyStateView.swift */,
+				27AA2E379081B015754C90C9 /* FloatingCreateButton.swift */,
+				833A47B9B16F5413D9D168F7 /* PostCard.swift */,
+				BF91A9D01D99EFF0F6E358B4 /* PrimaryButton.swift */,
+				8095EB05E008CE7C32E6E651 /* SecondaryButton.swift */,
+				1D0E157B9A8092F80521B946 /* SectionHeader.swift */,
+				89C82BC1D80C8A259F81B60A /* SkeletonView.swift */,
+				160E7F445BBF004CBBB2550E /* StatCard.swift */,
+				68D95589CB8507C6990E8F10 /* StatusChip.swift */,
+				875B1D1E0F759112BAF62931 /* TimeSlotRow.swift */,
 				52810402C452CA5EA4C499B8 /* Brand */,
 			);
 			path = Components;
@@ -100,6 +144,7 @@
 				E523AAD7C6B14DD8A4D1BF17 /* dayframe-app-icon.svg */,
 				1A7D92944EA5F33554D134F5 /* dayframe-logo-lockup.svg */,
 				7719FCA482D45873C93E3A77 /* dayframe-mark.svg */,
+				667C9893C2A542E10C0462E5 /* README.md */,
 			);
 			path = Brand;
 			sourceTree = "<group>";
@@ -174,8 +219,18 @@
 				49ECA819B90DDBC5D6F1A2D5 /* Onboarding */,
 				04EF18EEB40E5377A0BE8D5F /* Profile */,
 				0C0B8BABBAD8713F3420BE3C /* Queue */,
+				A185EF39A0A912522F857A10 /* Shell */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		A185EF39A0A912522F857A10 /* Shell */ = {
+			isa = PBXGroup;
+			children = (
+				CC2E32A8CC578830A4F4BAA7 /* MainTabView.swift */,
+				D999482FF52B7365742EF084 /* TabPlaceholderView.swift */,
+			);
+			path = Shell;
 			sourceTree = "<group>";
 		};
 		B2080D3DD6DD1CE8E6C322AE /* Channels */ = {
@@ -190,6 +245,7 @@
 			isa = PBXGroup;
 			children = (
 				64A3188BD5F73F328EBABE3D /* .gitkeep */,
+				0281864B119EFFB4E84282BC /* Platform.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -291,6 +347,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C028156C0A825AE10A24B98C /* Assets.xcassets in Resources */,
+				008557CE42FB2276E1FA65CF /* README.md in Resources */,
 				69E40D7E3C77C45E0F72EFBA /* dayframe-app-icon.svg in Resources */,
 				00E7998F4E2D252D34E5A385 /* dayframe-logo-lockup.svg in Resources */,
 				294FA47DF469452D6572FC0F /* dayframe-mark.svg in Resources */,
@@ -304,13 +361,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				87108E7E3B10D07C8C125222 /* ChannelAvatar.swift in Sources */,
+				3D6919087B62BDB618F11F97 /* CharacterCounterRing.swift in Sources */,
 				1F198F0D0307F6FEF9C78A69 /* DayframeColor.swift in Sources */,
 				CD873F85A782C1C0BCE1B090 /* DayframeFont.swift in Sources */,
 				1208BC8FC5393FC815FF7DD9 /* DayframeLayout.swift in Sources */,
 				89A0E259F09F2C288C0BE6B8 /* DayframeLogoMark.swift in Sources */,
 				A765CD043FDC6F6FEC3998E7 /* DayframeSchedulerApp.swift in Sources */,
 				663B0F264FC50DD3CA1403B9 /* DayframeWordmark.swift in Sources */,
+				85504A013B1CFCD48FF2F53D /* EmptyStateView.swift in Sources */,
+				A83EB65D3A74089AD36432F8 /* FloatingCreateButton.swift in Sources */,
 				943AAD0C5C93D36DABD5DBDD /* LaunchView.swift in Sources */,
+				C5304CA65A4CCD28A859ABD9 /* MainTabView.swift in Sources */,
+				6F78D4BF4F9154492B05AF10 /* Platform.swift in Sources */,
+				78BB10727D02C6CFE0567DEE /* PostCard.swift in Sources */,
+				36FDD39F1300685B4FB1395E /* PrimaryButton.swift in Sources */,
+				717E49BAEE9CC45B145A6CC6 /* SecondaryButton.swift in Sources */,
+				49C171FA8D111593CB207986 /* SectionHeader.swift in Sources */,
+				F5C3206E1FA69E7A6B93A337 /* SkeletonView.swift in Sources */,
+				CE37DD489472A58BBC1B3522 /* StatCard.swift in Sources */,
+				6D4FDA443DBDAF59F450709F /* StatusChip.swift in Sources */,
+				43A2780944F10744BC1DA599 /* TabPlaceholderView.swift in Sources */,
+				C53D8104974DE13C71DA92B9 /* TimeSlotRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -4,7 +4,7 @@ import SwiftUI
 struct DayframeSchedulerApp: App {
     var body: some Scene {
         WindowGroup {
-            LaunchView()
+            MainTabView()
         }
     }
 }

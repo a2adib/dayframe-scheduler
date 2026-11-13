@@ -20,9 +20,9 @@ Note on Figma access (Phase 0): no Figma MCP and no exported frames were availab
 Note on simulator (Phase 0): Xcode 27.2 is installed but no iOS simulator runtime was present; `xcodebuild -downloadPlatform iOS` was started. The launch-screen screenshot comparison runs once the runtime is available. The app itself builds for the simulator destination with zero warnings.
 
 ## Phase 1: Design System and Shell
-- [ ] Color assets (light/dark), typography, spacing, radius tokens
-- [ ] Components listed in UI_Spec.md section 3, each with `#Preview`
-- [ ] 5-tab shell with raised Create button
+- [x] Color assets (light/dark), typography, spacing, radius tokens
+- [x] Components listed in UI_Spec.md section 3, each with `#Preview`
+- [x] 5-tab shell with raised Create button
 - **Done when:** shell runs, all components previewed in Light and Dark
 
 ## Phase 2: Screens on Mock Data
@@ -94,3 +94,6 @@ TikTok, YouTube, Facebook integrations; AI caption improvements; team workspaces
 - **Launch screen:** no Figma frame exists; Phase 0 shows the mark above the wordmark centered on the background token (UI_Spec "Launch: centered logo").
 - **Project generation:** Xcode project generated with `xcodegen` from `project.yml` (reproducible; no hand-maintained pbxproj).
 - **Simulator runtime:** none installed on this machine; iOS platform download started to run the Phase 0 screenshot comparison.
+- **Custom tab bar (Phase 1):** the system `TabView` bar (iOS 27 floating capsule style) does not match the Figma Queue mock (full-width white bar, 1px top hairline #E6E8F0, five evenly spaced slots with an empty center). The shell therefore draws its own bar (`MainTabView`) with Queue / Calendar / Analytics / Profile items and the FloatingCreateButton raised in the center slot. Tokens verified in the simulator by pixel-sampling (#2C4BFF active, #9CA3AF inactive, #E6E8F0 hairline, gradient #4F6BFF/#7B61FF).
+- **Phase 1 shell reference:** the only Figma screen frame (Queue, node 4-3) was used as the reference for the tab bar; captures in `docs/design/compare-tabbar-figma-vs-sim.png`. The Create button opens a Composer placeholder full-screen sheet until Phase 2 builds the real Composer.
+- **Spring token (Phase 1):** `Animation.spring(response: 0.35, dampingFraction: 0.8)` — the docs' "damping" maps to the API's `dampingFraction`.
