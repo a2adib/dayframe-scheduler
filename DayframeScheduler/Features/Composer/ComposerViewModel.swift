@@ -1,9 +1,16 @@
 import Foundation
 import Observation
+import PhotosUI
+import SwiftUI
 
 @Observable
 @MainActor
 final class ComposerViewModel {
+    struct PendingMedia: Identifiable, Equatable {
+        let id = UUID()
+        let data: Data
+    }
+
     private let channelRepository: ChannelRepository
     private let postRepository: PostRepository
     private let scheduleRepository: ScheduleRepository
@@ -14,6 +21,7 @@ final class ComposerViewModel {
     var scheduleMode: ScheduleMode = .queue
     var customDate: Date = .now.addingTimeInterval(3_600)
     var selectedTab: Tab = .compose
+    private(set) var pendingMedia: [PendingMedia] = []
 
     private(set) var isSaving = false
     private(set) var validationError: String?
@@ -60,6 +68,18 @@ final class ComposerViewModel {
         } else {
             selectedChannelIDs.insert(channel.id)
         }
+    }
+
+    func addMedia(from items: [PhotosPickerItem]) async {
+        for item in items {
+            if let data = try? await item.loadTransferable(type: Data.self) {
+                pendingMedia.append(PendingMedia(data: data))
+            }
+        }
+    }
+
+    func removeMedia(_ media: PendingMedia) {
+        pendingMedia.removeAll { $0.id == media.id }
     }
 
     func selectedPlatforms() -> [Platform] {
@@ -131,11 +151,17 @@ final class ComposerViewModel {
             publishedAt: nil, targets: targets, media: []
         )
         do {
-            _ = try await postRepository.save(
+            var saved = try await postRepository.save(
                 post, as: asDraft ? .draft : .scheduled,
                 scheduleMode: asDraft ? nil : scheduleMode,
                 scheduledAt: scheduledAt
             )
+            for media in pendingMedia {
+                let asset = try await postRepository.attachMedia(
+                    media.data, fileName: "photo.jpg", kind: .image, to: saved
+                )
+                saved.media.append(asset)
+            }
             return true
         } catch {
             validationError = "Couldn't save the post. Try again."

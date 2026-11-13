@@ -48,8 +48,4 @@ final class ProfileViewModel {
     func setNotification(_ keyPath: WritableKeyPath<NotificationPreferences, Bool>, to value: Bool) {
         notifications[keyPath: keyPath] = value
     }
-
-    func logout() async {
-        try? await profileRepository.logout()
-    }
 }

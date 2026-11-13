@@ -6,7 +6,6 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: ProfileViewModel?
-    @State private var showsLoggedOut = false
     @State private var showsDeleteConfirmation = false
 
     var body: some View {
@@ -45,11 +44,6 @@ struct ProfileView: View {
             accountSection(model: model)
         }
         .listStyle(.insetGrouped)
-        .sheet(isPresented: $showsLoggedOut) {
-            NavigationStack {
-                AuthFlowView(onFinished: { showsLoggedOut = false })
-            }
-        }
         .confirmationDialog(
             "Delete your account?",
             isPresented: Binding(
@@ -175,8 +169,7 @@ struct ProfileView: View {
         Section {
             Button {
                 Task {
-                    await model.logout()
-                    showsLoggedOut = true
+                    await environment.signOut()
                 }
             } label: {
                 Label("Log out", systemImage: "rectangle.portrait.and.arrow.right")

@@ -46,12 +46,12 @@ Note on simulator (Phase 0): Xcode 27.2 is installed but no iOS simulator runtim
 - **Done when:** migrations apply cleanly, RLS verified with two test users
 
 ## Phase 4: Live Data Layer
-- [ ] Add `supabase-swift`, `AppEnvironment`, `Live` repositories
-- [ ] Auth: email, Sign in with Apple, Google
-- [ ] Profiles, posting slots, posts and targets CRUD, media upload
-- [ ] SwiftData cache and offline drafts
-- [ ] Swap Mock to Live behind a debug toggle
-- **Done when:** a user can sign up, create, schedule, edit, and delete posts end to end (no publishing yet)
+- [x] Add `supabase-swift`, `AppEnvironment`, `Live` repositories
+- [x] Auth: email, Sign in with Apple, Google (email verified end to end; Apple/Google route through Supabase OAuth but providers are unconfigured locally — see Decisions)
+- [x] Profiles, posting slots, posts and targets CRUD, media upload
+- [x] SwiftData cache and offline drafts
+- [x] Swap Mock to Live behind a debug toggle
+- **Done when:** a user can sign up, create, schedule, edit, and delete posts end to end (no publishing yet) — verified on-device with the `LiveDataLayerTests` suite
 
 ## Phase 5: Channels and Publishing
 - [ ] Per platform: read provider docs, write `docs/integrations/<platform>.md` (TRD.md section 11)
@@ -103,3 +103,8 @@ TikTok, YouTube, Facebook integrations; AI caption improvements; team workspaces
 - **Queue Today count (Phase 2):** the mock data has 2 posts today vs 3 in the Figma frame (the frame's third post exists in the mock as a later-day item). Layout and styling match; content counts are mock data.
 - **Enum casts in SQL (Phase 3):** Postgres 17 requires explicit `::post_status` casts for enum literals inside `CASE` expressions in PL/pgSQL updates (the first seed run exposed this in `derive_post_status`; fixed in the same not-yet-shipped migration).
 - **Verification results (Phase 3):** `supabase db reset` applies migration + seed cleanly. RLS verified with two seeded users (A sees only own rows; cross-user reads return 0 rows and cross-user inserts are rejected). `channels_public` exposes exactly the 10 non-secret columns. Derived status flips scheduled → published → failed through target updates. Free-plan limits enforced: 4th channel rejected, 11th scheduled target per channel rejected, both allowed for Pro. `media` bucket is private with owner-folder storage policies.
+- **On-device testing (Phase 4):** the Mac's disk filled up, so all simulator devices were deleted (runtime disk images retained) and the project now builds/runs/tests on the user's physical iPhone (team `77XMQVA342`, automatic signing, cert trusted on device). Local Supabase listens on loopback only, so a tiny Python TCP forwarder (Mac `0.0.0.0:54321` → `127.0.0.1:54321`, scratchpad `supabase_forward.py`) exposes it over LAN; the app/tests read `SUPABASE_URL` (default local URL, `TEST_RUNNER_SUPABASE_URL=http://<mac-lan-ip>:54321` for device tests). `project.yml` now generates an `Info.plist` with `NSAllowsLocalNetworking` + `NSLocalNetworkUsageDescription` (ATS/local-network permission) and `UIRequiresFullScreen` (portrait-only warning).
+- **Storage path casing (Phase 4):** the `media` bucket policy matches `(storage.foldername(name))[1] = auth.uid()::text`; Swift's `UUID`/`uuidString` render UPPERCASE, so uploads built from interpolated UUIDs failed RLS with 403. Storage paths are now explicitly lowercased (`user/post/uuid.ext`).
+- **Media upload (Phase 4):** `PostRepository.attachMedia(_:fileName:kind:to:)` uploads bytes to the private `media` bucket under `userID/postID/` and inserts a `media_assets` row. The Composer gained a PhotosPicker media row (up to 4 images, removable thumbnails) that uploads on save. Covered by an e2e test.
+- **Apple/Google sign-in (Phase 4):** `LiveAuthService.signInWithOAuth` calls Supabase OAuth, but the Apple/Google providers need real developer credentials (Apple Developer Program, Google Cloud OAuth client) and can't be verified against the local stack. Email auth is fully working; provider configuration is deferred until credentials are available (flagged for the Phase 4 stop).
+- **fetchQueue fix (Phase 4):** the queue was assembled from `post_targets`, which hid posts with zero targets. It now queries `posts` by user first and joins targets/media.

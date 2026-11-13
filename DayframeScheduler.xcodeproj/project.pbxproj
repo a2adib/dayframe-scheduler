@@ -9,12 +9,15 @@
 /* Begin PBXBuildFile section */
 		008557CE42FB2276E1FA65CF /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 667C9893C2A542E10C0462E5 /* README.md */; };
 		00E7998F4E2D252D34E5A385 /* dayframe-logo-lockup.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1A7D92944EA5F33554D134F5 /* dayframe-logo-lockup.svg */; };
+		03B22B23BD199C53685567C7 /* LiveScheduleRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E281515C0603D62ED4592A48 /* LiveScheduleRepository.swift */; };
 		047B7F46FE74136B20924360 /* ScheduleRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2084AFC0E4E3E86F3736F78 /* ScheduleRepository.swift */; };
 		04CAAA33C784482E1A545E7E /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 220E8DCD3799FA45DF8AD6B9 /* ProfileViewModel.swift */; };
 		05712A31514267D6A015FF74 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51FD1DAE985B3E2679E5323 /* Profile.swift */; };
 		06A6D4A51040B217DB49040F /* MockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335CD5A4E060024D791A0339 /* MockData.swift */; };
 		08CAB27936293DEB8D9C5BDC /* ChannelRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BBABDED5F05830BDF012CB /* ChannelRepository.swift */; };
 		0A298452A1F9DBA61EB05640 /* PostingSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1539A5CC12E2DA257E424499 /* PostingSlot.swift */; };
+		0B75588818D992458AC8CAA1 /* LiveAnalyticsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4370520B7FF1664DC754EDF3 /* LiveAnalyticsRepository.swift */; };
+		0B87FF6D465E17D932C61DB4 /* LiveChannelRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB263078A3CB884C483214A /* LiveChannelRepository.swift */; };
 		0C0750C0162239736FB587CA /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ACEBB7C9A93C25CA42AD5D9 /* AuthView.swift */; };
 		1208BC8FC5393FC815FF7DD9 /* DayframeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB2750EEABE6C00CB476418 /* DayframeLayout.swift */; };
 		1290941B6716F120A6C725A8 /* PostTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15B227593A124BB4B639746 /* PostTarget.swift */; };
@@ -26,26 +29,34 @@
 		3352076A3D0196A420B3295E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5B0E641557D5F46DF52F51 /* SettingsView.swift */; };
 		35869828F773B3C170EF5F72 /* ComposerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A8842767C506CA98A53976C /* ComposerViewModel.swift */; };
 		36FDD39F1300685B4FB1395E /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF91A9D01D99EFF0F6E358B4 /* PrimaryButton.swift */; };
+		37230CD605C0D2877E06A451 /* SwiftDataQueueCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F73C9851C60CF2CA6065B57 /* SwiftDataQueueCache.swift */; };
 		38829EA41C9900615422EC35 /* AnalyticsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138421F933E9CC6DC8B57418 /* AnalyticsRepository.swift */; };
 		3D6919087B62BDB618F11F97 /* CharacterCounterRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7A5D5077820AD4CB98FAA1 /* CharacterCounterRing.swift */; };
 		43A2780944F10744BC1DA599 /* TabPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D999482FF52B7365742EF084 /* TabPlaceholderView.swift */; };
 		48CC2958C7D415E3A89F4995 /* MockProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED8151718F3F917D835257E /* MockProfileRepository.swift */; };
 		49C171FA8D111593CB207986 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0E157B9A8092F80521B946 /* SectionHeader.swift */; };
+		4C70AF5EEB292D536A885AE5 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10759BE8C5E17B51EBE1F14E /* AuthService.swift */; };
 		506D8100461D6B8DEA4E0597 /* AnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC9C7AE8C550E5960286733 /* AnalyticsViewModel.swift */; };
+		5134E206BF5F2F7BDDC21B75 /* MockAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 973C5A0F5C1F1F39993EB19B /* MockAuthService.swift */; };
 		5699FA96A4283B34083C6713 /* MockScheduleRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A6E0663FA54D67E8E90720 /* MockScheduleRepository.swift */; };
+		57A8B14F12893183B80ED9F8 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C3F6F45A86C20528E91AC61C /* Supabase */; };
 		5CB268BC8ACF4D8AC7D5A5AD /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AFD3B7E87F86B14B994B0A2 /* OnboardingView.swift */; };
 		663B0F264FC50DD3CA1403B9 /* DayframeWordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40FEAA3CB620D654EE724202 /* DayframeWordmark.swift */; };
 		67B562719F02AD61130C877C /* MockAnalyticsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A52ABF33030342E2AAED2E5 /* MockAnalyticsRepository.swift */; };
+		692DA41CE207018DF9E78DF1 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9828885D1EDF0CE5B43AA0AF /* SupabaseService.swift */; };
 		69E40D7E3C77C45E0F72EFBA /* dayframe-app-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = E523AAD7C6B14DD8A4D1BF17 /* dayframe-app-icon.svg */; };
 		6C5B3C380B6088FC5B4D1E21 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2072640E2E7A9CE36F0CA53 /* ProfileRepository.swift */; };
 		6D4FDA443DBDAF59F450709F /* StatusChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D95589CB8507C6990E8F10 /* StatusChip.swift */; };
 		6F78D4BF4F9154492B05AF10 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0281864B119EFFB4E84282BC /* Platform.swift */; };
 		717E49BAEE9CC45B145A6CC6 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8095EB05E008CE7C32E6E651 /* SecondaryButton.swift */; };
+		739EB55BAF9923D78A80DA77 /* CachedPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54640C234A72FF3A04169E62 /* CachedPost.swift */; };
 		7727F300BDF29C926C0DBF1E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65CC415547EB6DD9EE29829 /* ProfileView.swift */; };
 		77A316667FF0AFA35A8D2787 /* CalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BBC95C38FFBD0BE28BA256 /* CalendarViewModel.swift */; };
 		78BB10727D02C6CFE0567DEE /* PostCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 833A47B9B16F5413D9D168F7 /* PostCard.swift */; };
 		7B24EA9188FD333EEEB2906F /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FE27E1EBA5F1036922E900 /* Channel.swift */; };
 		7D9C287D26844B8ACA5514E0 /* Post.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5296F6F80EDC3388C0926105 /* Post.swift */; };
+		7EFF03B37AF8BA0E73F60EEA /* LiveProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C337BA19BF991DBB0B1C536 /* LiveProfileRepository.swift */; };
+		8222CE16E779C186DE9F29D7 /* RowMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17EDE6D98EF3D549FCD0218F /* RowMapping.swift */; };
 		82EA04214CEBAC290F8DEB92 /* CoreEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0466F32623B84CB82BCB83A /* CoreEnums.swift */; };
 		85504A013B1CFCD48FF2F53D /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 629B02F673F5AE485342F75D /* EmptyStateView.swift */; };
 		85841F4390D4ED584C51A003 /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0646B4EBFF480F3123F34D84 /* NotificationPreferences.swift */; };
@@ -58,7 +69,9 @@
 		A70250EF196389573CB93526 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEE59AB56D231B8AF3F58C6 /* AppEnvironment.swift */; };
 		A765CD043FDC6F6FEC3998E7 /* DayframeSchedulerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B39E0AA86FCB148F754DCA4 /* DayframeSchedulerApp.swift */; };
 		A83EB65D3A74089AD36432F8 /* FloatingCreateButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27AA2E379081B015754C90C9 /* FloatingCreateButton.swift */; };
+		B26903871714ADC9247F3812 /* LivePostRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 262F0FA708E621DEE46F8653 /* LivePostRepository.swift */; };
 		B2EBEE8F69DAB7D75926ADEE /* AuthFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F261C9391ECD639FEDE30E /* AuthFlowView.swift */; };
+		B34DA8E995B0D013814AD62A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AB1DA77AC68FD192D479F8D3 /* Supabase */; };
 		B6F9C59A7647EF2BCB4987CE /* MockPostRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C925F00E65FC6F407BD990B4 /* MockPostRepository.swift */; };
 		BFF01F17E0B910B00696EBBF /* MockChannelRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F421C74E2A0FA6B39D774C27 /* MockChannelRepository.swift */; };
 		C028156C0A825AE10A24B98C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 917D4E6405CB11EAEFF7640A /* Assets.xcassets */; };
@@ -68,13 +81,25 @@
 		CE37DD489472A58BBC1B3522 /* StatCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160E7F445BBF004CBBB2550E /* StatCard.swift */; };
 		DBECCE60237A1C3F4CD61F03 /* OnboardingPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4644CC7BC0D0D790E8336917 /* OnboardingPage.swift */; };
 		DE1420FCC5C4044B6C507104 /* QueueViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBF2BDE352EA8F908DBC297 /* QueueViewModel.swift */; };
+		E278E184F06B0F80114B0796 /* LiveDataLayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6E5F7209E154943EAAA36 /* LiveDataLayerTests.swift */; };
 		E52EC27D5DBD3710359F2B02 /* DailyMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59B05DC84BE6ACE062EE444 /* DailyMetrics.swift */; };
 		EB219EC21ABA3179CA5EC271 /* PostRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE67E4AB1F4827FCAD66BA56 /* PostRepository.swift */; };
 		F2C362F874F51B3A87A70F20 /* QueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF4B4B8C7D9979C67C8C0CC /* QueueView.swift */; };
 		F300E115727B631CD992012C /* PostingScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73670C8A2ED3BB8FB38C5B5 /* PostingScheduleView.swift */; };
 		F5C3206E1FA69E7A6B93A337 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C82BC1D80C8A259F81B60A /* SkeletonView.swift */; };
 		F6F170691EB71B8530A6C2EE /* AppEnvironmentKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4F9BB3EF47896CD40E22A5A /* AppEnvironmentKey.swift */; };
+		FF2D2A4483A288DD7F5F0DCE /* LiveAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B51EECDCE962091C3F0B421 /* LiveAuthService.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		68FB31F3912EF67764AFA2EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2BA7EFE82C95E22889CE5A3F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D6206A8EF996F6A266A32470;
+			remoteInfo = DayframeScheduler;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		01958CB43BB16CAFAD2DE9AF /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
@@ -83,15 +108,19 @@
 		07ABB5C3168E3688BD30D9CA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		09610892BDCF0615AA785974 /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
 		0BC9C7AE8C550E5960286733 /* AnalyticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsViewModel.swift; sourceTree = "<group>"; };
+		10759BE8C5E17B51EBE1F14E /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		138421F933E9CC6DC8B57418 /* AnalyticsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsRepository.swift; sourceTree = "<group>"; };
 		1539A5CC12E2DA257E424499 /* PostingSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostingSlot.swift; sourceTree = "<group>"; };
 		160E7F445BBF004CBBB2550E /* StatCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatCard.swift; sourceTree = "<group>"; };
+		17EDE6D98EF3D549FCD0218F /* RowMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowMapping.swift; sourceTree = "<group>"; };
 		1A7D92944EA5F33554D134F5 /* dayframe-logo-lockup.svg */ = {isa = PBXFileReference; path = "dayframe-logo-lockup.svg"; sourceTree = "<group>"; };
 		1B39E0AA86FCB148F754DCA4 /* DayframeSchedulerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeSchedulerApp.swift; sourceTree = "<group>"; };
 		1C7A5D5077820AD4CB98FAA1 /* CharacterCounterRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterCounterRing.swift; sourceTree = "<group>"; };
 		1D0E157B9A8092F80521B946 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
 		1DBF2BDE352EA8F908DBC297 /* QueueViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueViewModel.swift; sourceTree = "<group>"; };
+		1FE6E5F7209E154943EAAA36 /* LiveDataLayerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDataLayerTests.swift; sourceTree = "<group>"; };
 		220E8DCD3799FA45DF8AD6B9 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
+		262F0FA708E621DEE46F8653 /* LivePostRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LivePostRepository.swift; sourceTree = "<group>"; };
 		27AA2E379081B015754C90C9 /* FloatingCreateButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingCreateButton.swift; sourceTree = "<group>"; };
 		2DC1EF084842809001EFD18C /* LaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchView.swift; sourceTree = "<group>"; };
 		335CD5A4E060024D791A0339 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockData.swift; sourceTree = "<group>"; };
@@ -100,10 +129,14 @@
 		3ED8151718F3F917D835257E /* MockProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockProfileRepository.swift; sourceTree = "<group>"; };
 		40FEAA3CB620D654EE724202 /* DayframeWordmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeWordmark.swift; sourceTree = "<group>"; };
 		41A6E0663FA54D67E8E90720 /* MockScheduleRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockScheduleRepository.swift; sourceTree = "<group>"; };
+		4370520B7FF1664DC754EDF3 /* LiveAnalyticsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAnalyticsRepository.swift; sourceTree = "<group>"; };
 		4644CC7BC0D0D790E8336917 /* OnboardingPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPage.swift; sourceTree = "<group>"; };
+		4B51EECDCE962091C3F0B421 /* LiveAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAuthService.swift; sourceTree = "<group>"; };
+		4C337BA19BF991DBB0B1C536 /* LiveProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveProfileRepository.swift; sourceTree = "<group>"; };
 		4EF4B4B8C7D9979C67C8C0CC /* QueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueView.swift; sourceTree = "<group>"; };
 		5010EDFB0B3ABB4DA0EB0234 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		5296F6F80EDC3388C0926105 /* Post.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Post.swift; sourceTree = "<group>"; };
+		54640C234A72FF3A04169E62 /* CachedPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedPost.swift; sourceTree = "<group>"; };
 		58FE27E1EBA5F1036922E900 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
 		5A52ABF33030342E2AAED2E5 /* MockAnalyticsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAnalyticsRepository.swift; sourceTree = "<group>"; };
 		5C89EEE4933BE03C39860193 /* DayframeScheduler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DayframeScheduler.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,6 +148,7 @@
 		667C9893C2A542E10C0462E5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		68D95589CB8507C6990E8F10 /* StatusChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusChip.swift; sourceTree = "<group>"; };
 		6AFD3B7E87F86B14B994B0A2 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		6BB263078A3CB884C483214A /* LiveChannelRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveChannelRepository.swift; sourceTree = "<group>"; };
 		6C909358FC78D53C0D3CB141 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		6DB2750EEABE6C00CB476418 /* DayframeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeLayout.swift; sourceTree = "<group>"; };
 		7719FCA482D45873C93E3A77 /* dayframe-mark.svg */ = {isa = PBXFileReference; path = "dayframe-mark.svg"; sourceTree = "<group>"; };
@@ -124,10 +158,13 @@
 		875B1D1E0F759112BAF62931 /* TimeSlotRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSlotRow.swift; sourceTree = "<group>"; };
 		89C82BC1D80C8A259F81B60A /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
 		8A8842767C506CA98A53976C /* ComposerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerViewModel.swift; sourceTree = "<group>"; };
+		8F73C9851C60CF2CA6065B57 /* SwiftDataQueueCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataQueueCache.swift; sourceTree = "<group>"; };
 		917D4E6405CB11EAEFF7640A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9523792E502D4C1C30ACED43 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		95CB5B67CADB4F31B4A1C5C6 /* ConnectChannelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectChannelsView.swift; sourceTree = "<group>"; };
+		973C5A0F5C1F1F39993EB19B /* MockAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAuthService.swift; sourceTree = "<group>"; };
 		974466DAC1BBEE575B4752F2 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		9828885D1EDF0CE5B43AA0AF /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		9ABDFCFAE13D44DECEEAD200 /* DayframeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayframeColor.swift; sourceTree = "<group>"; };
 		9B5B0E641557D5F46DF52F51 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9EEE59AB56D231B8AF3F58C6 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
@@ -150,12 +187,34 @@
 		D65CC415547EB6DD9EE29829 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		D999482FF52B7365742EF084 /* TabPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabPlaceholderView.swift; sourceTree = "<group>"; };
 		DA37163AF0A341553191E46B /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		DB5C250827B10FA83E37868D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E1DDF8B1AE10B7268198A64B /* PostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
+		E281515C0603D62ED4592A48 /* LiveScheduleRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveScheduleRepository.swift; sourceTree = "<group>"; };
 		E523AAD7C6B14DD8A4D1BF17 /* dayframe-app-icon.svg */ = {isa = PBXFileReference; path = "dayframe-app-icon.svg"; sourceTree = "<group>"; };
 		E73670C8A2ED3BB8FB38C5B5 /* PostingScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostingScheduleView.swift; sourceTree = "<group>"; };
 		F421C74E2A0FA6B39D774C27 /* MockChannelRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockChannelRepository.swift; sourceTree = "<group>"; };
 		F4F9BB3EF47896CD40E22A5A /* AppEnvironmentKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentKey.swift; sourceTree = "<group>"; };
+		FE33EB1FD3EB02D4451BAD8A /* DayframeSchedulerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DayframeSchedulerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		67FCDAD112C72D7B8E48F47A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57A8B14F12893183B80ED9F8 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E38F27BB10AA2D89E7B6A287 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B34DA8E995B0D013814AD62A /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		04EF18EEB40E5377A0BE8D5F /* Profile */ = {
@@ -174,6 +233,7 @@
 			isa = PBXGroup;
 			children = (
 				5C89EEE4933BE03C39860193 /* DayframeScheduler.app */,
+				FE33EB1FD3EB02D4451BAD8A /* DayframeSchedulerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -202,6 +262,7 @@
 			isa = PBXGroup;
 			children = (
 				5F51989ABDAAE84FFB5C1823 /* DayframeScheduler */,
+				B2BAF5F08DFDD251DD01E405 /* Tests */,
 				05906C993BC1D55C59970FAF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -257,6 +318,19 @@
 			path = Brand;
 			sourceTree = "<group>";
 		};
+		589285580CFAD8425051E0A3 /* Live */ = {
+			isa = PBXGroup;
+			children = (
+				4370520B7FF1664DC754EDF3 /* LiveAnalyticsRepository.swift */,
+				6BB263078A3CB884C483214A /* LiveChannelRepository.swift */,
+				262F0FA708E621DEE46F8653 /* LivePostRepository.swift */,
+				4C337BA19BF991DBB0B1C536 /* LiveProfileRepository.swift */,
+				E281515C0603D62ED4592A48 /* LiveScheduleRepository.swift */,
+				17EDE6D98EF3D549FCD0218F /* RowMapping.swift */,
+			);
+			path = Live;
+			sourceTree = "<group>";
+		};
 		5B48F52CD6C09CA97DFFAB83 /* DesignSystem */ = {
 			isa = PBXGroup;
 			children = (
@@ -271,6 +345,7 @@
 			isa = PBXGroup;
 			children = (
 				917D4E6405CB11EAEFF7640A /* Assets.xcassets */,
+				DB5C250827B10FA83E37868D /* Info.plist */,
 				BF733BC8F407B6617C99010C /* App */,
 				1986C02505DA393DD7E6C4F4 /* Assets */,
 				09C86C46576D993B7877BCBA /* Components */,
@@ -288,6 +363,12 @@
 			isa = PBXGroup;
 			children = (
 				CD30E5F360E726D65563E2AE /* .gitkeep */,
+				10759BE8C5E17B51EBE1F14E /* AuthService.swift */,
+				54640C234A72FF3A04169E62 /* CachedPost.swift */,
+				4B51EECDCE962091C3F0B421 /* LiveAuthService.swift */,
+				973C5A0F5C1F1F39993EB19B /* MockAuthService.swift */,
+				9828885D1EDF0CE5B43AA0AF /* SupabaseService.swift */,
+				8F73C9851C60CF2CA6065B57 /* SwiftDataQueueCache.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -335,6 +416,14 @@
 			path = Channels;
 			sourceTree = "<group>";
 		};
+		B2BAF5F08DFDD251DD01E405 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C219D761290A7745D88A80E1 /* DayframeSchedulerTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		B78EAFCA0139BEB976B7F1E8 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -373,6 +462,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		C219D761290A7745D88A80E1 /* DayframeSchedulerTests */ = {
+			isa = PBXGroup;
+			children = (
+				1FE6E5F7209E154943EAAA36 /* LiveDataLayerTests.swift */,
+			);
+			path = DayframeSchedulerTests;
+			sourceTree = "<group>";
+		};
 		DB65478CE37F6EB927ACC536 /* Calendar */ = {
 			isa = PBXGroup;
 			children = (
@@ -397,6 +494,7 @@
 				CE67E4AB1F4827FCAD66BA56 /* PostRepository.swift */,
 				C2072640E2E7A9CE36F0CA53 /* ProfileRepository.swift */,
 				C2084AFC0E4E3E86F3736F78 /* ScheduleRepository.swift */,
+				589285580CFAD8425051E0A3 /* Live */,
 			);
 			path = Repositories;
 			sourceTree = "<group>";
@@ -413,12 +511,33 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		92F9B24CE506FA353348B47A /* DayframeSchedulerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 92FB0BD16F55A861CEFB4F97 /* Build configuration list for PBXNativeTarget "DayframeSchedulerTests" */;
+			buildPhases = (
+				91636B6FC5F3E8F9D6807D9C /* Sources */,
+				E38F27BB10AA2D89E7B6A287 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				74C0C8694F594BBE9193411A /* PBXTargetDependency */,
+			);
+			name = DayframeSchedulerTests;
+			packageProductDependencies = (
+				AB1DA77AC68FD192D479F8D3 /* Supabase */,
+			);
+			productName = DayframeSchedulerTests;
+			productReference = FE33EB1FD3EB02D4451BAD8A /* DayframeSchedulerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		D6206A8EF996F6A266A32470 /* DayframeScheduler */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A3D61EF786F0A0C78C1D49CB /* Build configuration list for PBXNativeTarget "DayframeScheduler" */;
 			buildPhases = (
 				C62222552AC38D45C47CE82C /* Sources */,
 				8ACD7180E54729049707AA13 /* Resources */,
+				67FCDAD112C72D7B8E48F47A /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -426,6 +545,7 @@
 			);
 			name = DayframeScheduler;
 			packageProductDependencies = (
+				C3F6F45A86C20528E91AC61C /* Supabase */,
 			);
 			productName = DayframeScheduler;
 			productReference = 5C89EEE4933BE03C39860193 /* DayframeScheduler.app */;
@@ -440,6 +560,14 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					92F9B24CE506FA353348B47A = {
+						DevelopmentTeam = 77XMQVA342;
+						ProvisioningStyle = Automatic;
+					};
+					D6206A8EF996F6A266A32470 = {
+						DevelopmentTeam = 77XMQVA342;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 587B48459814C687B37735EE /* Build configuration list for PBXProject "DayframeScheduler" */;
@@ -451,12 +579,16 @@
 			);
 			mainGroup = 0A7152F0FCB43CB336320863;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				905E92D7C7B92125DB42B763 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 05906C993BC1D55C59970FAF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				D6206A8EF996F6A266A32470 /* DayframeScheduler */,
+				92F9B24CE506FA353348B47A /* DayframeSchedulerTests */,
 			);
 		};
 /* End PBXProject section */
@@ -477,6 +609,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		91636B6FC5F3E8F9D6807D9C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E278E184F06B0F80114B0796 /* LiveDataLayerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C62222552AC38D45C47CE82C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -487,7 +627,9 @@
 				A70250EF196389573CB93526 /* AppEnvironment.swift in Sources */,
 				F6F170691EB71B8530A6C2EE /* AppEnvironmentKey.swift in Sources */,
 				B2EBEE8F69DAB7D75926ADEE /* AuthFlowView.swift in Sources */,
+				4C70AF5EEB292D536A885AE5 /* AuthService.swift in Sources */,
 				0C0750C0162239736FB587CA /* AuthView.swift in Sources */,
+				739EB55BAF9923D78A80DA77 /* CachedPost.swift in Sources */,
 				9E662CF0C9EFF213C5D83CB5 /* CalendarView.swift in Sources */,
 				77A316667FF0AFA35A8D2787 /* CalendarViewModel.swift in Sources */,
 				7B24EA9188FD333EEEB2906F /* Channel.swift in Sources */,
@@ -508,9 +650,16 @@
 				85504A013B1CFCD48FF2F53D /* EmptyStateView.swift in Sources */,
 				A83EB65D3A74089AD36432F8 /* FloatingCreateButton.swift in Sources */,
 				943AAD0C5C93D36DABD5DBDD /* LaunchView.swift in Sources */,
+				0B75588818D992458AC8CAA1 /* LiveAnalyticsRepository.swift in Sources */,
+				FF2D2A4483A288DD7F5F0DCE /* LiveAuthService.swift in Sources */,
+				0B87FF6D465E17D932C61DB4 /* LiveChannelRepository.swift in Sources */,
+				B26903871714ADC9247F3812 /* LivePostRepository.swift in Sources */,
+				7EFF03B37AF8BA0E73F60EEA /* LiveProfileRepository.swift in Sources */,
+				03B22B23BD199C53685567C7 /* LiveScheduleRepository.swift in Sources */,
 				C5304CA65A4CCD28A859ABD9 /* MainTabView.swift in Sources */,
 				85A92A8297EE430EB34DD799 /* MediaAsset.swift in Sources */,
 				67B562719F02AD61130C877C /* MockAnalyticsRepository.swift in Sources */,
+				5134E206BF5F2F7BDDC21B75 /* MockAuthService.swift in Sources */,
 				BFF01F17E0B910B00696EBBF /* MockChannelRepository.swift in Sources */,
 				06A6D4A51040B217DB49040F /* MockData.swift in Sources */,
 				B6F9C59A7647EF2BCB4987CE /* MockPostRepository.swift in Sources */,
@@ -534,6 +683,7 @@
 				04CAAA33C784482E1A545E7E /* ProfileViewModel.swift in Sources */,
 				F2C362F874F51B3A87A70F20 /* QueueView.swift in Sources */,
 				DE1420FCC5C4044B6C507104 /* QueueViewModel.swift in Sources */,
+				8222CE16E779C186DE9F29D7 /* RowMapping.swift in Sources */,
 				047B7F46FE74136B20924360 /* ScheduleRepository.swift in Sources */,
 				717E49BAEE9CC45B145A6CC6 /* SecondaryButton.swift in Sources */,
 				49C171FA8D111593CB207986 /* SectionHeader.swift in Sources */,
@@ -541,12 +691,22 @@
 				F5C3206E1FA69E7A6B93A337 /* SkeletonView.swift in Sources */,
 				CE37DD489472A58BBC1B3522 /* StatCard.swift in Sources */,
 				6D4FDA443DBDAF59F450709F /* StatusChip.swift in Sources */,
+				692DA41CE207018DF9E78DF1 /* SupabaseService.swift in Sources */,
+				37230CD605C0D2877E06A451 /* SwiftDataQueueCache.swift in Sources */,
 				43A2780944F10744BC1DA599 /* TabPlaceholderView.swift in Sources */,
 				C53D8104974DE13C71DA92B9 /* TimeSlotRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		74C0C8694F594BBE9193411A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D6206A8EF996F6A266A32470 /* DayframeScheduler */;
+			targetProxy = 68FB31F3912EF67764AFA2EC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6EA16D55B51869677A53932C /* Release */ = {
@@ -584,9 +744,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 77XMQVA342;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -598,8 +759,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -647,9 +806,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 77XMQVA342;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -667,8 +827,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -682,13 +840,46 @@
 			};
 			name = Debug;
 		};
+		80E0333029947AA6520F7112 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dayframe.scheduler.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DayframeScheduler.app/DayframeScheduler";
+			};
+			name = Release;
+		};
+		89D4411F8C3030F6850D021A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dayframe.scheduler.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DayframeScheduler.app/DayframeScheduler";
+			};
+			name = Debug;
+		};
 		B95D2C9D05B3D53045823DB2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_KEY_CFBundleDisplayName = Dayframe;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_FILE = DayframeScheduler/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -705,8 +896,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_KEY_CFBundleDisplayName = Dayframe;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_FILE = DayframeScheduler/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -730,6 +920,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		92FB0BD16F55A861CEFB4F97 /* Build configuration list for PBXNativeTarget "DayframeSchedulerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89D4411F8C3030F6850D021A /* Debug */,
+				80E0333029947AA6520F7112 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		A3D61EF786F0A0C78C1D49CB /* Build configuration list for PBXNativeTarget "DayframeScheduler" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -740,6 +939,30 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		905E92D7C7B92125DB42B763 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.55.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AB1DA77AC68FD192D479F8D3 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 905E92D7C7B92125DB42B763 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		C3F6F45A86C20528E91AC61C /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 905E92D7C7B92125DB42B763 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2BA7EFE82C95E22889CE5A3F /* Project object */;
 }

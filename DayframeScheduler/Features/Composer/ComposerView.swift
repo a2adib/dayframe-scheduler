@@ -1,4 +1,6 @@
+import PhotosUI
 import SwiftUI
+import UIKit
 
 /// Composer full-screen sheet (AppFLOW 2.3, UI_Spec §4.4): channel
 /// multi-select with counter rings, text editor, media row, toolbar, schedule
@@ -9,6 +11,7 @@ struct ComposerView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
     @State private var model: ComposerViewModel?
+    @State private var pickerSelection: [PhotosPickerItem] = []
     @FocusState private var editorFocused: Bool
 
     var body: some View {
@@ -122,6 +125,8 @@ struct ComposerView: View {
                     }
                     .accessibilityLabel("Post text")
 
+                mediaRow(model: model)
+
                 HStack(spacing: DayframeSpacing.lg) {
                     toolbarButton("face.smiling", label: "Emoji")
                     toolbarButton("number", label: "Hashtag")
@@ -134,6 +139,53 @@ struct ComposerView: View {
             .padding(DayframeSpacing.lg)
         }
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    private func mediaRow(model: ComposerViewModel) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: DayframeSpacing.md) {
+                ForEach(model.pendingMedia) { media in
+                    if let image = UIImage(data: media.data) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: DayframeRadius.input, style: .continuous))
+                            .overlay(alignment: .topTrailing) {
+                                Button {
+                                    model.removeMedia(media)
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(.white, DayframeColor.textSecondary)
+                                }
+                                .offset(x: 6, y: -6)
+                                .accessibilityLabel("Remove image")
+                            }
+                            .accessibilityLabel("Attached image")
+                    }
+                }
+                PhotosPicker(
+                    selection: $pickerSelection,
+                    maxSelectionCount: 4,
+                    matching: .images
+                ) {
+                    Image(systemName: "photo.badge.plus")
+                        .font(.system(size: 18))
+                        .foregroundStyle(DayframeColor.textSecondary)
+                        .frame(width: 64, height: 64)
+                        .background(DayframeColor.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: DayframeRadius.input, style: .continuous))
+                }
+                .accessibilityLabel("Add photo")
+            }
+        }
+        .onChange(of: pickerSelection) {
+            guard !pickerSelection.isEmpty else { return }
+            let items = pickerSelection
+            pickerSelection = []
+            Task { await model.addMedia(from: items) }
+        }
     }
 
     private func channelPicker(model: ComposerViewModel) -> some View {

@@ -60,4 +60,18 @@ final class MockPostRepository: PostRepository {
         posts = posts.map { $0.id == post.id ? updated : $0 }
         return updated
     }
+
+    func attachMedia(_ data: Data, fileName: String, kind: MediaKind, to post: Post) async throws -> MediaAsset {
+        let position = posts.first(where: { $0.id == post.id })?.media.count ?? 0
+        let asset = MediaAsset(
+            id: UUID(), storagePath: "mock/\(post.id)/\(fileName)",
+            kind: kind, width: nil, height: nil, durationMS: nil, position: position
+        )
+        posts = posts.map { stored in
+            var updated = stored
+            if updated.id == post.id { updated.media.append(asset) }
+            return updated
+        }
+        return asset
+    }
 }

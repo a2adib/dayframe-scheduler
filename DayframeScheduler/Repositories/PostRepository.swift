@@ -9,4 +9,6 @@ protocol PostRepository {
     func duplicate(_ post: Post) async throws -> Post
     func delete(_ post: Post) async throws
     func reschedule(_ post: Post, to date: Date) async throws -> Post
+    /// Uploads media bytes and attaches them to the post (schema `media_assets`).
+    func attachMedia(_ data: Data, fileName: String, kind: MediaKind, to post: Post) async throws -> MediaAsset
 }

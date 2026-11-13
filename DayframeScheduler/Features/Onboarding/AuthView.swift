@@ -5,6 +5,7 @@ import SwiftUI
 struct AuthView: View {
     var onAuthenticated: () -> Void
 
+    @Environment(AppEnvironment.self) private var environment
     @State private var email = ""
     @State private var password = ""
     @State private var errorMessage: String?
@@ -40,12 +41,12 @@ struct AuthView: View {
                 socialButton(
                     title: "Continue with Apple",
                     systemImage: "apple.logo",
-                    action: { onAuthenticated() }
+                    action: { Task { await oauth(.apple) } }
                 )
                 socialButton(
                     title: "Continue with Google",
                     systemImage: "g.circle",
-                    action: { onAuthenticated() }
+                    action: { Task { await oauth(.google) } }
                 )
             }
             .padding(.horizontal, DayframeSpacing.xl)
@@ -97,16 +98,26 @@ struct AuthView: View {
     }
 
     private func signIn() {
-        if email.isEmpty || password.isEmpty {
+        Task { await authenticate { try await environment.signIn(email: email, password: password) } }
+    }
+
+    private func oauth(_ provider: OAuthProvider) async {
+        await authenticate { _ = try await environment.authService.signInWithOAuth(provider: provider) }
+    }
+
+    private func authenticate(_ operation: () async throws -> Void) async {
+        if email.isEmpty && password.isEmpty {
             errorMessage = "Enter your email and password to continue."
             return
         }
         errorMessage = nil
         isSigningIn = true
-        Task {
-            try? await Task.sleep(for: .seconds(0.6))
-            isSigningIn = false
+        defer { isSigningIn = false }
+        do {
+            try await operation()
             onAuthenticated()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }
