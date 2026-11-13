@@ -372,6 +372,7 @@ allow_dynamic_registration = false
 
 [edge_runtime]
 enabled = true
+
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -380,6 +381,37 @@ policy = "per_worker"
 inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
+
+# Local development secrets: point every platform API at the mock provider
+# (scratchpad mock_provider.py) and use dev credentials, so the full
+# oauth-start → oauth-callback → publish-due loop runs without real apps.
+# Real credentials go into `supabase secrets set` for hosted environments and
+# are never committed.
+[edge_runtime.secrets]
+OAUTH_STATE_SECRET = "local-dev-oauth-state-secret"
+FUNCTIONS_BASE_URL = "http://kong:8000"
+META_APP_ID = "local-dev-meta-app-id"
+META_APP_SECRET = "local-dev-meta-app-secret"
+X_CLIENT_ID = "local-dev-x-client-id"
+X_CLIENT_SECRET = "local-dev-x-client-secret"
+LINKEDIN_CLIENT_ID = "local-dev-linkedin-client-id"
+LINKEDIN_CLIENT_SECRET = "local-dev-linkedin-client-secret"
+INSTAGRAM_API_BASE = "http://host.docker.internal:8787"
+INSTAGRAM_TOKEN_URL = "http://host.docker.internal:8787/oauth/access_token"
+X_API_BASE = "http://host.docker.internal:8787"
+X_AUTHORIZE_URL = "http://host.docker.internal:8787"
+LINKEDIN_API_BASE = "http://host.docker.internal:8787"
+LINKEDIN_AUTHORIZE_URL = "http://host.docker.internal:8787"
+
+# The provider redirects here without a session, so Kong must not demand one;
+# the function validates the signed state itself.
+[functions.oauth-callback]
+verify_jwt = false
+
+# Invoked by pg_cron with the service key, which is not a JWT; the function
+# checks the Bearer against its own service-role env var.
+[functions.publish-due]
+verify_jwt = false
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"

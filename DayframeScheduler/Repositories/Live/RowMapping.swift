@@ -31,6 +31,7 @@ struct PostRow: Codable {
     var scheduleMode: String?
     var scheduledAt: Date?
     var publishedAt: Date?
+    var idempotencyKey: String?
 }
 
 struct PostTargetRow: Codable {

@@ -11,6 +11,7 @@ struct ConnectChannelsView: View {
     @State private var channels: [Channel] = []
     @State private var connectingPlatform: Platform?
     @State private var limitReached = false
+    @State private var connectionError: String?
 
     private let allPlatforms: [Platform] = Platform.allCases
 
@@ -41,6 +42,17 @@ struct ConnectChannelsView: View {
                 }
             }
             .task { await load() }
+            .alert(
+                "Couldn't connect",
+                isPresented: Binding(
+                    get: { connectionError != nil },
+                    set: { if !$0 { connectionError = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(connectionError ?? "")
+            }
         }
     }
 
@@ -93,17 +105,29 @@ struct ConnectChannelsView: View {
         limitReached = channels.count >= 3
         guard !limitReached else { return }
         connectingPlatform = platform
-        try? await Task.sleep(for: .seconds(0.8))
-        _ = try? await environment.channelRepository.connect(platform)
-        connectingPlatform = nil
+        defer { connectingPlatform = nil }
+        do {
+            _ = try await environment.channelRepository.connect(platform)
+            connectionError = nil
+        } catch AppError.oauthCancelled {
+            // User closed the provider window: no change, no error (AppFLOW 2.2).
+        } catch {
+            connectionError = error.localizedDescription
+        }
         await load()
     }
 
     private func reconnect(_ channel: Channel) async {
         connectingPlatform = channel.platform
-        try? await Task.sleep(for: .seconds(0.6))
-        _ = try? await environment.channelRepository.reconnect(channel)
-        connectingPlatform = nil
+        defer { connectingPlatform = nil }
+        do {
+            _ = try await environment.channelRepository.reconnect(channel)
+            connectionError = nil
+        } catch AppError.oauthCancelled {
+            // User closed the provider window: no change, no error (AppFLOW 2.2).
+        } catch {
+            connectionError = error.localizedDescription
+        }
         await load()
     }
 }

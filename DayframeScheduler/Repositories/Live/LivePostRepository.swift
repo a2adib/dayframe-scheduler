@@ -4,11 +4,15 @@ import Supabase
 enum AppError: LocalizedError {
     case notSupported(String)
     case network(String)
+    case oauthCancelled
+    case oauth(String)
 
     var errorDescription: String? {
         switch self {
-        case .notSupported(let message), .network(let message):
+        case .notSupported(let message), .network(let message), .oauth(let message):
             message
+        case .oauthCancelled:
+            nil
         }
     }
 }
@@ -111,7 +115,9 @@ struct LivePostRepository: PostRepository {
             status: status.rawValue,
             scheduleMode: scheduleMode?.rawValue,
             scheduledAt: scheduledAt,
-            publishedAt: nil
+            publishedAt: nil,
+            // Unique (user_id, idempotency_key) makes scheduling retries safe.
+            idempotencyKey: post.id.uuidString
         )
         let inserted: PostRow = try await client
             .from("posts")

@@ -1,6 +1,11 @@
 import Foundation
 import Supabase
 
+/// Response body of the oauth-start Edge Function.
+struct OAuthStartResponse: Decodable {
+    let url: String
+}
+
 struct LiveChannelRepository: ChannelRepository {
     let client: SupabaseClient
 
@@ -25,27 +30,42 @@ struct LiveChannelRepository: ChannelRepository {
         }
     }
 
-    /// Connecting runs through oauth-start/oauth-callback Edge Functions in
-    /// Phase 5; until then the live repository cannot create channels.
+    /// Runs the full OAuth flow: oauth-start returns the provider authorize
+    /// URL, the in-app web session completes at the dayframe:// callback, and
+    /// the refreshed channel row is reloaded from the database.
     func connect(_ platform: Platform) async throws -> Channel {
-        throw AppError.notSupported(
-            "\(platform.displayName) connection arrives with the OAuth Edge Functions (Phase 5)."
-        )
+        try await runOAuth(platform: platform)
     }
 
     func reconnect(_ channel: Channel) async throws -> Channel {
-        try await client
-            .from("channels")
-            .update([
-                "status": "connected",
-                "token_expires_at": SupabaseService.supabaseTimestampFormatter.string(from: .now.addingTimeInterval(60 * 86_400)),
-            ])
-            .eq("id", value: channel.id)
-            .execute()
-        var updated = channel
-        updated.status = .connected
-        updated.tokenExpiresAt = .now.addingTimeInterval(60 * 86_400)
-        return updated
+        try await runOAuth(platform: channel.platform)
+    }
+
+    private func runOAuth(platform: Platform) async throws -> Channel {
+        let start: OAuthStartResponse
+        do {
+            start = try await client.functions.invoke(
+                "oauth-start",
+                options: FunctionInvokeOptions(body: ["platform": platform.rawValue])
+            )
+        } catch let error as FunctionsError {
+            throw AppError.oauth(error.errorDescription ?? "Could not start the \(platform.displayName) sign-in.")
+        }
+        guard let url = URL(string: start.url) else {
+            throw AppError.oauth("The \(platform.displayName) sign-in URL was invalid.")
+        }
+
+        let callback = try await OAuthSessionService.make().run(authorizeURL: url)
+        guard callback.status == "success" else {
+            if callback.message == "cancelled" { throw AppError.oauthCancelled }
+            throw AppError.oauth(callback.message ?? "\(platform.displayName) sign-in failed.")
+        }
+
+        let channels = try await loadChannels()
+        guard let channel = channels.last(where: { $0.platform == platform }) else {
+            throw AppError.oauth("\(platform.displayName) connected, but the channel was not found.")
+        }
+        return channel
     }
 
     func disconnect(_ channel: Channel) async throws {

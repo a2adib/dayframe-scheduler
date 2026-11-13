@@ -54,12 +54,12 @@ Note on simulator (Phase 0): Xcode 27.2 is installed but no iOS simulator runtim
 - **Done when:** a user can sign up, create, schedule, edit, and delete posts end to end (no publishing yet) — verified on-device with the `LiveDataLayerTests` suite
 
 ## Phase 5: Channels and Publishing
-- [ ] Per platform: read provider docs, write `docs/integrations/<platform>.md` (TRD.md section 11)
-- [ ] `oauth-start` and `oauth-callback` for Instagram, X, LinkedIn (first three)
-- [ ] `publish-due` with claim, retry, backoff, idempotency
-- [ ] pg_cron job each minute
-- [ ] Reconnect flow for expired tokens
-- **Done when:** a scheduled post publishes to a real test account within 2 minutes, failures retry and surface correctly
+- [x] Per platform: read provider docs, write `docs/integrations/<platform>.md` (TRD.md section 11)
+- [x] `oauth-start` and `oauth-callback` for Instagram, X, LinkedIn (first three)
+- [x] `publish-due` with claim, retry, backoff, idempotency
+- [x] pg_cron job each minute
+- [x] Reconnect flow for expired tokens
+- **Done when:** a scheduled post publishes to a real test account within 2 minutes, failures retry and surface correctly — verified end to end against a mock platform API; real-account verification pending credentials (see Decisions)
 
 ## Phase 6: Analytics
 - [ ] `refresh-metrics` function and tables populated
@@ -108,3 +108,8 @@ TikTok, YouTube, Facebook integrations; AI caption improvements; team workspaces
 - **Media upload (Phase 4):** `PostRepository.attachMedia(_:fileName:kind:to:)` uploads bytes to the private `media` bucket under `userID/postID/` and inserts a `media_assets` row. The Composer gained a PhotosPicker media row (up to 4 images, removable thumbnails) that uploads on save. Covered by an e2e test.
 - **Apple/Google sign-in (Phase 4):** `LiveAuthService.signInWithOAuth` calls Supabase OAuth, but the Apple/Google providers need real developer credentials (Apple Developer Program, Google Cloud OAuth client) and can't be verified against the local stack. Email auth is fully working; provider configuration is deferred until credentials are available (flagged for the Phase 4 stop).
 - **fetchQueue fix (Phase 4):** the queue was assembled from `post_targets`, which hid posts with zero targets. It now queries `posts` by user first and joins targets/media.
+- **Phase 5 Edge Functions:** `supabase/functions/` — `oauth-start` (signed HMAC state + PKCE, returns the provider authorize URL), `oauth-callback` (exchanges the code, resolves identity, stores the token in Vault via the `store_token_secret` RPC, upserts the channel, 302s to `dayframe://oauth?...` for `ASWebAuthenticationSession`), `publish-due` (claims via `claim_due_targets` FOR UPDATE SKIP LOCKED, refreshes stale tokens — X always, IG/LinkedIn < 7 days — publishes per platform, applies 1/5/15-min backoff, max 3 attempts; permanent failures mark `failed`, auth failures flip the channel to `expired`).
+- **Cron wiring (Phase 5):** migration `20261113120000_publishing.sql` enables pg_cron + pg_net and schedules `publish-due` every minute. The cron job reads two Vault secrets (`service_role_key`, `functions_base_url`) — create them once per environment (local defaults: the CLI's legacy service-role JWT and `http://kong:8000`). `verify_jwt` is disabled for `oauth-callback` (provider redirect has no session) and `publish-due` (service key is not a JWT on Kong); both functions validate their own credentials.
+- **Mock provider for local e2e (Phase 5):** `config.toml` `[edge_runtime.secrets]` points every platform API base at a mock provider server (scratchpad `mock_provider.py`, control file `/tmp/dayframe-mock-control` = ok/500/429/401), so the complete loop runs locally with dev credentials. Hosted environments set real credentials with `supabase secrets set`.
+- **Phase 5 verification results:** `supabase db reset` applies the migration cleanly. oauth-start → oauth-callback (mock exchange) → channel row created with Vault token. publish-due: published to the mock X API (`external_post_id = mock-tweet-1`, `posts.published_at` set); 500-failure → attempt 1 scheduled with +1 min backoff → escalates through +5 min to `failed` at attempt 3 with derived post status `failed`; 401 → channel `expired` and targets pause (claim filters `status = 'connected'`). pg_cron fires every minute and reaches the function (HTTP 200 in `net._http_response`). App: builds with zero warnings, all 3 device tests pass.
+- **Pending for real accounts (Phase 5):** publishing to real Instagram/X/LinkedIn accounts requires OAuth apps with approved products/permissions (Meta advanced access, X paid tier for usable post limits, LinkedIn "Share on LinkedIn" product) plus real credentials; the engine is credential-agnostic and was verified against the mock.
