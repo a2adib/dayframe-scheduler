@@ -26,16 +26,16 @@ Note on simulator (Phase 0): Xcode 27.2 is installed but no iOS simulator runtim
 - **Done when:** shell runs, all components previewed in Light and Dark
 
 ## Phase 2: Screens on Mock Data
-- [ ] Define repository protocols and `Mock` implementations (TRD.md section 2)
-- [ ] Onboarding and Auth UI
-- [ ] Connect Channels
-- [ ] Queue (chips, grouping, swipe actions, skeleton, empty)
-- [ ] Composer (counters, media row, schedule options, previews)
-- [ ] Calendar (month and week)
-- [ ] Post Detail
-- [ ] Analytics (Swift Charts)
-- [ ] Profile and Settings (slot editor, theme, upgrade card, About)
-- [ ] For EACH screen: open its Figma frame first, build, then screenshot the simulator and compare side by side; fix spacing, color, type, and icon differences before ticking
+- [x] Define repository protocols and `Mock` implementations (TRD.md section 2)
+- [x] Onboarding and Auth UI
+- [x] Connect Channels
+- [x] Queue (chips, grouping, swipe actions, skeleton, empty)
+- [x] Composer (counters, media row, schedule options, previews)
+- [x] Calendar (month and week)
+- [x] Post Detail
+- [x] Analytics (Swift Charts)
+- [x] Profile and Settings (slot editor, theme, upgrade card, About)
+- [x] For EACH screen: open its Figma frame first, build, then screenshot the simulator and compare side by side; fix spacing, color, type, and icon differences before ticking
 - **Done when:** all 8 screens reachable per AppFLOW.md, each visually matches its Figma frame, zero warnings, previews for every view
 
 ## Phase 3: Backend Foundation
@@ -97,3 +97,7 @@ TikTok, YouTube, Facebook integrations; AI caption improvements; team workspaces
 - **Custom tab bar (Phase 1):** the system `TabView` bar (iOS 27 floating capsule style) does not match the Figma Queue mock (full-width white bar, 1px top hairline #E6E8F0, five evenly spaced slots with an empty center). The shell therefore draws its own bar (`MainTabView`) with Queue / Calendar / Analytics / Profile items and the FloatingCreateButton raised in the center slot. Tokens verified in the simulator by pixel-sampling (#2C4BFF active, #9CA3AF inactive, #E6E8F0 hairline, gradient #4F6BFF/#7B61FF).
 - **Phase 1 shell reference:** the only Figma screen frame (Queue, node 4-3) was used as the reference for the tab bar; captures in `docs/design/compare-tabbar-figma-vs-sim.png`. The Create button opens a Composer placeholder full-screen sheet until Phase 2 builds the real Composer.
 - **Spring token (Phase 1):** `Animation.spring(response: 0.35, dampingFraction: 0.8)` — the docs' "damping" maps to the API's `dampingFraction`.
+- **Phase 2 Figma coverage:** only Queue has a Figma frame; the other 7 screens follow UI_Spec/AppFLOW defaults (approved by the user at the Phase 0 stop). Queue was compared side by side with node 4-3 after building (`docs/design/compare-queue-figma-vs-sim.png`).
+- **Debug screen routing (Phase 2):** `DAYFRAME_SCREEN` env var forces a screen as root (`DayframeSchedulerApp.debugRoot`), settable per launch via `SIMCTL_CHILD_`-prefixed simctl env. Used for the per-screen simulator captures and to be reused by UI tests.
+- **Status chips include an icon + text (Phase 2):** Figma's Scheduled chip is text-only, but UI_Spec §7 requires never relying on color alone; the clock icon is kept and text matches Figma.
+- **Queue Today count (Phase 2):** the mock data has 2 posts today vs 3 in the Figma frame (the frame's third post exists in the mock as a later-day item). Layout and styling match; content counts are mock data.

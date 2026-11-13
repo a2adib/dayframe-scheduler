@@ -15,10 +15,10 @@ struct MainTabView: View {
     var body: some View {
         Group {
             switch selection {
-            case .queue: TabPlaceholderView(title: "Queue", systemImage: "list.bullet")
-            case .calendar: TabPlaceholderView(title: "Calendar", systemImage: "calendar")
-            case .analytics: TabPlaceholderView(title: "Analytics", systemImage: "chart.bar")
-            case .profile: TabPlaceholderView(title: "Profile", systemImage: "person.circle")
+            case .queue: QueueView()
+            case .calendar: CalendarView()
+            case .analytics: AnalyticsView()
+            case .profile: ProfileView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -27,7 +27,7 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .fullScreenCover(isPresented: $showsComposer) {
-            TabPlaceholderView(title: "Composer", systemImage: "square.and.pencil")
+            ComposerView(onSaved: { showsComposer = false })
         }
     }
 
