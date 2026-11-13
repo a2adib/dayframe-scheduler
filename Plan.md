@@ -39,10 +39,10 @@ Note on simulator (Phase 0): Xcode 27.2 is installed but no iOS simulator runtim
 - **Done when:** all 8 screens reachable per AppFLOW.md, each visually matches its Figma frame, zero warnings, previews for every view
 
 ## Phase 3: Backend Foundation
-- [ ] Supabase project, local dev via CLI, `/supabase/migrations` from Schema.md
-- [ ] RLS policies on every table, `channels_public` view, storage bucket and policies
-- [ ] Triggers: derived post status, plan limits
-- [ ] Seed script for dev data
+- [x] Supabase project, local dev via CLI, `/supabase/migrations` from Schema.md
+- [x] RLS policies on every table, `channels_public` view, storage bucket and policies
+- [x] Triggers: derived post status, plan limits
+- [x] Seed script for dev data
 - **Done when:** migrations apply cleanly, RLS verified with two test users
 
 ## Phase 4: Live Data Layer
@@ -101,3 +101,5 @@ TikTok, YouTube, Facebook integrations; AI caption improvements; team workspaces
 - **Debug screen routing (Phase 2):** `DAYFRAME_SCREEN` env var forces a screen as root (`DayframeSchedulerApp.debugRoot`), settable per launch via `SIMCTL_CHILD_`-prefixed simctl env. Used for the per-screen simulator captures and to be reused by UI tests.
 - **Status chips include an icon + text (Phase 2):** Figma's Scheduled chip is text-only, but UI_Spec §7 requires never relying on color alone; the clock icon is kept and text matches Figma.
 - **Queue Today count (Phase 2):** the mock data has 2 posts today vs 3 in the Figma frame (the frame's third post exists in the mock as a later-day item). Layout and styling match; content counts are mock data.
+- **Enum casts in SQL (Phase 3):** Postgres 17 requires explicit `::post_status` casts for enum literals inside `CASE` expressions in PL/pgSQL updates (the first seed run exposed this in `derive_post_status`; fixed in the same not-yet-shipped migration).
+- **Verification results (Phase 3):** `supabase db reset` applies migration + seed cleanly. RLS verified with two seeded users (A sees only own rows; cross-user reads return 0 rows and cross-user inserts are rejected). `channels_public` exposes exactly the 10 non-secret columns. Derived status flips scheduled → published → failed through target updates. Free-plan limits enforced: 4th channel rejected, 11th scheduled target per channel rejected, both allowed for Pro. `media` bucket is private with owner-folder storage policies.
