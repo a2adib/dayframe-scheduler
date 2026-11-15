@@ -387,21 +387,8 @@ deno_version = 2
 # oauth-start → oauth-callback → publish-due loop runs without real apps.
 # Real credentials go into `supabase secrets set` for hosted environments and
 # are never committed.
-[edge_runtime.secrets]
-OAUTH_STATE_SECRET = "local-dev-oauth-state-secret"
-FUNCTIONS_BASE_URL = "http://kong:8000"
-META_APP_ID = "local-dev-meta-app-id"
-META_APP_SECRET = "local-dev-meta-app-secret"
-X_CLIENT_ID = "local-dev-x-client-id"
-X_CLIENT_SECRET = "local-dev-x-client-secret"
-LINKEDIN_CLIENT_ID = "local-dev-linkedin-client-id"
-LINKEDIN_CLIENT_SECRET = "local-dev-linkedin-client-secret"
-INSTAGRAM_API_BASE = "http://host.docker.internal:8787"
-INSTAGRAM_TOKEN_URL = "http://host.docker.internal:8787/oauth/access_token"
-X_API_BASE = "http://host.docker.internal:8787"
-X_AUTHORIZE_URL = "http://host.docker.internal:8787"
-LINKEDIN_API_BASE = "http://host.docker.internal:8787"
-LINKEDIN_AUTHORIZE_URL = "http://host.docker.internal:8787"
+# [edge_runtime.secrets]
+# Secrets for production are set via `supabase secrets set`.
 
 # The provider redirects here without a session, so Kong must not demand one;
 # the function validates the signed state itself.

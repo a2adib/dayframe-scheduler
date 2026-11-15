@@ -74,6 +74,10 @@ export const APP_REDIRECT_SCHEME = "dayframe";
 
 /// The https URL the provider redirects back to (the oauth-callback function).
 export function callbackUrl(req: Request, platform: Platform): string {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (supabaseUrl && !supabaseUrl.includes("127.0.0.1") && !supabaseUrl.includes("localhost")) {
+    return `${supabaseUrl}/functions/v1/oauth-callback?platform=${platform}`;
+  }
   const base = Deno.env.get("FUNCTIONS_BASE_URL") ??
     `${new URL(req.url).protocol}//${new URL(req.url).host}`;
   return `${base}/functions/v1/oauth-callback?platform=${platform}`;

@@ -14,10 +14,12 @@ final class ComposerViewModel {
     private let channelRepository: ChannelRepository
     private let postRepository: PostRepository
     private let scheduleRepository: ScheduleRepository
+    let editingPost: Post?
 
     private(set) var channels: [Channel] = []
     var selectedChannelIDs: Set<UUID> = []
     var bodyText = ""
+    var bodyOverrides: [Platform: String] = [:]
     var scheduleMode: ScheduleMode = .queue
     var customDate: Date = .now.addingTimeInterval(3_600)
     var selectedTab: Tab = .compose
@@ -46,19 +48,38 @@ final class ComposerViewModel {
         channelRepository: ChannelRepository,
         postRepository: PostRepository,
         scheduleRepository: ScheduleRepository,
+        editingPost: Post? = nil,
         presetDate: Date? = nil
     ) {
         self.channelRepository = channelRepository
         self.postRepository = postRepository
         self.scheduleRepository = scheduleRepository
-        if let presetDate { customDate = presetDate; scheduleMode = .custom }
+        self.editingPost = editingPost
+        if let editingPost {
+            self.bodyText = editingPost.body
+            self.scheduleMode = editingPost.scheduleMode ?? .custom
+            self.customDate = editingPost.scheduledAt ?? .now.addingTimeInterval(3_600)
+        } else if let presetDate {
+            self.customDate = presetDate
+            self.scheduleMode = .custom
+        }
     }
 
     var isValid: Bool { validationError == nil && !selectedChannelIDs.isEmpty }
 
     func load() async {
         channels = (try? await channelRepository.loadChannels()) ?? []
-        selectedChannelIDs = Set(channels.filter { $0.status == .connected }.map(\.id))
+        if let editingPost {
+            selectedChannelIDs = Set(editingPost.targets.map(\.channelID))
+            for target in editingPost.targets {
+                if let override = target.bodyOverride,
+                   let platform = channels.first(where: { $0.id == target.channelID })?.platform {
+                    bodyOverrides[platform] = override
+                }
+            }
+        } else {
+            selectedChannelIDs = Set(channels.filter { $0.status == .connected }.map(\.id))
+        }
         await refreshQueueSlot()
     }
 
@@ -68,6 +89,22 @@ final class ComposerViewModel {
         } else {
             selectedChannelIDs.insert(channel.id)
         }
+    }
+
+    func bodyFor(platform: Platform) -> String {
+        bodyOverrides[platform] ?? bodyText
+    }
+
+    func setOverride(_ text: String, for platform: Platform) {
+        bodyOverrides[platform] = text
+    }
+
+    func clearOverride(for platform: Platform) {
+        bodyOverrides.removeValue(forKey: platform)
+    }
+
+    func hasOverride(for platform: Platform) -> Bool {
+        bodyOverrides[platform] != nil
     }
 
     func addMedia(from items: [PhotosPickerItem]) async {
@@ -98,10 +135,10 @@ final class ComposerViewModel {
         }
     }
 
-    /// Validation per AppFLOW 2.3: at least one channel, text present, and no
+    /// Validation per AppFLOW 2.3: at least one channel (for scheduled posts), text present, and no
     /// per-channel over-limit (which blocks scheduling for that channel).
-    func validate() -> Bool {
-        if selectedChannelIDs.isEmpty {
+    func validate(asDraft: Bool = false) -> Bool {
+        if !asDraft && selectedChannelIDs.isEmpty {
             validationError = "Select at least one channel."
             return false
         }
@@ -109,14 +146,17 @@ final class ComposerViewModel {
             validationError = "Write something first — the post can't be empty."
             return false
         }
-        if scheduleMode == .custom && customDate <= .now {
+        if !asDraft && scheduleMode == .custom && customDate <= .now {
             validationError = "Pick a time in the future."
             return false
         }
-        if scheduleMode != .now {
-            for platform in selectedPlatforms() where bodyText.count > limit(for: platform) {
-                validationError = "\(platform.displayName) allows \(limit(for: platform)) characters. Shorten the post or deselect it."
-                return false
+        if !asDraft && scheduleMode != .now {
+            for platform in selectedPlatforms() {
+                let text = bodyFor(platform: platform)
+                if text.count > limit(for: platform) {
+                    validationError = "\(platform.displayName) allows \(limit(for: platform)) characters. Shorten the post or deselect it."
+                    return false
+                }
             }
         }
         validationError = nil
@@ -124,7 +164,7 @@ final class ComposerViewModel {
     }
 
     func save(asDraft: Bool) async -> Bool {
-        guard validate() else { return false }
+        guard validate(asDraft: asDraft) else { return false }
         isSaving = true
         defer { isSaving = false }
         let scheduledAt: Date?
@@ -140,31 +180,55 @@ final class ComposerViewModel {
             .filter { selectedChannelIDs.contains($0.id) }
             .map { channel in
                 PostTarget(
-                    id: UUID(), channelID: channel.id, bodyOverride: nil,
-                    status: asDraft ? .draft : .scheduled, scheduledAt: scheduledAt,
-                    publishedAt: nil, attempts: 0, errorMessage: nil
+                    id: UUID(),
+                    channelID: channel.id,
+                    bodyOverride: bodyOverrides[channel.platform],
+                    status: asDraft ? .draft : .scheduled,
+                    scheduledAt: scheduledAt,
+                    publishedAt: nil,
+                    attempts: 0,
+                    errorMessage: nil
                 )
             }
-        let post = Post(
-            id: UUID(), body: bodyText, status: asDraft ? .draft : .scheduled,
-            scheduleMode: asDraft ? nil : scheduleMode, scheduledAt: scheduledAt,
-            publishedAt: nil, targets: targets, media: []
-        )
         do {
-            var saved = try await postRepository.save(
-                post, as: asDraft ? .draft : .scheduled,
+            var postToPersist = editingPost ?? Post(
+                id: UUID(),
+                body: bodyText,
+                status: asDraft ? .draft : .scheduled,
                 scheduleMode: asDraft ? nil : scheduleMode,
-                scheduledAt: scheduledAt
+                scheduledAt: scheduledAt,
+                publishedAt: nil,
+                targets: targets,
+                media: []
             )
+            postToPersist.body = bodyText
+            postToPersist.targets = targets
+
+            let saved: Post
+            if editingPost != nil {
+                saved = try await postRepository.update(
+                    postToPersist,
+                    as: asDraft ? .draft : .scheduled,
+                    scheduleMode: asDraft ? nil : scheduleMode,
+                    scheduledAt: scheduledAt
+                )
+            } else {
+                saved = try await postRepository.save(
+                    postToPersist,
+                    as: asDraft ? .draft : .scheduled,
+                    scheduleMode: asDraft ? nil : scheduleMode,
+                    scheduledAt: scheduledAt
+                )
+            }
             for media in pendingMedia {
-                let asset = try await postRepository.attachMedia(
+                _ = try await postRepository.attachMedia(
                     media.data, fileName: "photo.jpg", kind: .image, to: saved
                 )
-                saved.media.append(asset)
             }
             return true
         } catch {
-            validationError = "Couldn't save the post. Try again."
+            print("[ComposerViewModel] Failed to save post: \(error)")
+            validationError = error.localizedDescription
             return false
         }
     }

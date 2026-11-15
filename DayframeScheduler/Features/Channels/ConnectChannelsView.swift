@@ -13,11 +13,37 @@ struct ConnectChannelsView: View {
     @State private var limitReached = false
     @State private var connectionError: String?
 
-    private let allPlatforms: [Platform] = Platform.allCases
+    private let allPlatforms: [Platform] = [.x, .linkedin, .facebook, .instagram]
 
     var body: some View {
         NavigationStack {
             List {
+                if environment.mode == .live {
+                    Section {
+                        VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(DayframeColor.primary)
+                                Text("Testing without social API keys?")
+                                    .font(DayframeFont.headline)
+                                    .foregroundStyle(DayframeColor.textPrimary)
+                            }
+                            Text("Switch to Demo Mode to explore all scheduling, composer, calendar, and analytics features with pre-connected sample channels.")
+                                .font(.system(size: 13))
+                                .foregroundStyle(DayframeColor.textSecondary)
+                            Button("Switch to Demo Mode") {
+                                Task {
+                                    await environment.setBackendMode(.mock)
+                                    await load()
+                                }
+                            }
+                            .font(DayframeFont.chip)
+                            .foregroundStyle(DayframeColor.primary)
+                            .padding(.top, DayframeSpacing.xs)
+                        }
+                        .padding(.vertical, DayframeSpacing.xs)
+                    }
+                }
                 Section {
                     ForEach(allPlatforms, id: \.self) { platform in
                         row(platform: platform)
@@ -49,6 +75,14 @@ struct ConnectChannelsView: View {
                     set: { if !$0 { connectionError = nil } }
                 )
             ) {
+                if environment.mode == .live {
+                    Button("Switch to Demo Mode") {
+                        Task {
+                            await environment.setBackendMode(.mock)
+                            await load()
+                        }
+                    }
+                }
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(connectionError ?? "")
@@ -101,8 +135,12 @@ struct ConnectChannelsView: View {
         .padding(.vertical, DayframeSpacing.xs)
     }
 
+    private var isPro: Bool {
+        environment.currentProfile?.plan == .pro
+    }
+
     private func connect(_ platform: Platform) async {
-        limitReached = channels.count >= 3
+        limitReached = !isPro && channels.count >= 3
         guard !limitReached else { return }
         connectingPlatform = platform
         defer { connectingPlatform = nil }

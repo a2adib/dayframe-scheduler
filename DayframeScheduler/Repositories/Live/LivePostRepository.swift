@@ -155,6 +155,133 @@ struct LivePostRepository: PostRepository {
         return saved
     }
 
+    func update(
+        _ post: Post,
+        as status: PostStatus,
+        scheduleMode: ScheduleMode?,
+        scheduledAt: Date?
+    ) async throws -> Post {
+        let session = try await client.auth.session
+        let userID = session.user.id
+
+        struct UpdatePostPayload: Codable {
+            var body: String
+            var status: String
+            var scheduleMode: String?
+            var scheduledAt: String?
+            var updatedAt: String
+        }
+
+        let scheduledAtStr = scheduledAt.map { SupabaseService.supabaseTimestampFormatter.string(from: $0) }
+        let nowStr = SupabaseService.supabaseTimestampFormatter.string(from: .now)
+
+        let updatePayload = UpdatePostPayload(
+            body: post.body,
+            status: status.rawValue,
+            scheduleMode: scheduleMode?.rawValue,
+            scheduledAt: scheduledAtStr,
+            updatedAt: nowStr
+        )
+
+        try await client
+            .from("posts")
+            .update(updatePayload)
+            .eq("id", value: post.id)
+            .execute()
+
+        try await client
+            .from("post_targets")
+            .delete()
+            .eq("post_id", value: post.id)
+            .execute()
+
+        let targetRows = post.targets.map { target in
+            PostTargetRow(
+                id: target.id,
+                postId: post.id,
+                userId: userID,
+                channelId: target.channelID,
+                bodyOverride: target.bodyOverride,
+                status: status.rawValue,
+                scheduledAt: scheduledAt,
+                externalPostId: nil,
+                attempts: 0,
+                errorMessage: nil,
+                publishedAt: nil
+            )
+        }
+        if !targetRows.isEmpty {
+            try await client.from("post_targets").insert(targetRows).execute()
+        }
+
+        var saved = post
+        saved.status = status
+        saved.scheduleMode = scheduleMode
+        saved.scheduledAt = scheduledAt
+        saved.targets = post.targets.map { target in
+            var t = target
+            t.status = status
+            t.scheduledAt = scheduledAt
+            return t
+        }
+        return saved
+    }
+
+    func retry(_ post: Post) async throws -> Post {
+        let nowStr = SupabaseService.supabaseTimestampFormatter.string(from: .now)
+
+        struct RetryPostPayload: Codable {
+            var status: String
+            var scheduledAt: String
+            var updatedAt: String
+        }
+
+        let postPayload = RetryPostPayload(
+            status: PostStatus.scheduled.rawValue,
+            scheduledAt: nowStr,
+            updatedAt: nowStr
+        )
+
+        try await client
+            .from("posts")
+            .update(postPayload)
+            .eq("id", value: post.id)
+            .execute()
+
+        struct RetryTargetPayload: Codable {
+            var status: String
+            var scheduledAt: String
+            var attempts: Int
+            var errorMessage: String?
+        }
+
+        let targetPayload = RetryTargetPayload(
+            status: PostStatus.scheduled.rawValue,
+            scheduledAt: nowStr,
+            attempts: 0,
+            errorMessage: nil
+        )
+
+        try await client
+            .from("post_targets")
+            .update(targetPayload)
+            .eq("post_id", value: post.id)
+            .execute()
+
+        var retried = post
+        retried.status = .scheduled
+        retried.scheduledAt = .now
+        retried.targets = post.targets.map { target in
+            var t = target
+            t.status = .scheduled
+            t.scheduledAt = .now
+            t.attempts = 0
+            t.errorMessage = nil
+            return t
+        }
+        return retried
+    }
+
     func duplicate(_ post: Post) async throws -> Post {
         var copy = post
         copy.id = UUID()
@@ -227,9 +354,9 @@ extension PostTargetRow {
             bodyOverride: bodyOverride,
             status: RowMapping.postStatus(status),
             scheduledAt: scheduledAt,
-            publishedAt: nil,
-            attempts: 0,
-            errorMessage: nil
+            publishedAt: publishedAt,
+            attempts: attempts ?? 0,
+            errorMessage: errorMessage
         )
     }
 }

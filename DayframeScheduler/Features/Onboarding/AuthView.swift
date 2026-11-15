@@ -10,6 +10,7 @@ struct AuthView: View {
     @State private var password = ""
     @State private var errorMessage: String?
     @State private var isSigningIn = false
+    @State private var isSignUp = false
 
     var body: some View {
         VStack(spacing: DayframeSpacing.xl) {
@@ -33,16 +34,23 @@ struct AuthView: View {
 
             VStack(spacing: DayframeSpacing.md) {
                 PrimaryButton(
-                    title: isSigningIn ? "Signing in…" : "Sign in",
-                    action: signIn
+                    title: isSigningIn
+                        ? (isSignUp ? "Creating account…" : "Signing in…")
+                        : (isSignUp ? "Create account" : "Sign in"),
+                    action: submit
                 )
                 .padding(.horizontal, DayframeSpacing.xl)
 
-                socialButton(
-                    title: "Continue with Apple",
-                    systemImage: "apple.logo",
-                    action: { Task { await oauth(.apple) } }
-                )
+                Button(action: {
+                    isSignUp.toggle()
+                    errorMessage = nil
+                }) {
+                    Text(isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up")
+                        .font(DayframeFont.caption)
+                        .foregroundStyle(DayframeColor.primary)
+                }
+                .padding(.top, DayframeSpacing.xs)
+
                 socialButton(
                     title: "Continue with Google",
                     systemImage: "g.circle",
@@ -97,16 +105,34 @@ struct AuthView: View {
         .accessibilityLabel(title)
     }
 
-    private func signIn() {
-        Task { await authenticate { try await environment.signIn(email: email, password: password) } }
+    private func submit() {
+        Task {
+            await authenticate {
+                if isSignUp {
+                    _ = try await environment.signUp(email: email, password: password)
+                } else {
+                    _ = try await environment.signIn(email: email, password: password)
+                }
+            }
+        }
     }
 
     private func oauth(_ provider: OAuthProvider) async {
-        await authenticate { _ = try await environment.authService.signInWithOAuth(provider: provider) }
+        errorMessage = nil
+        isSigningIn = true
+        defer { isSigningIn = false }
+        do {
+            _ = try await environment.signInWithOAuth(provider: provider)
+            onAuthenticated()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func authenticate(_ operation: () async throws -> Void) async {
-        if email.isEmpty && password.isEmpty {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedEmail.isEmpty || trimmedPassword.isEmpty {
             errorMessage = "Enter your email and password to continue."
             return
         }

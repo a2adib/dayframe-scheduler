@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// Queue screen, matching the Figma "Code" frame (node 4-3): logo mark + title
-/// nav bar with a Channels pill, filter chips, posts grouped by day with a
-/// timeline connector, swipe actions, skeleton, and empty state (AppFLOW 2.5).
+/// nav bar with a Channels pill, filter chips (All, Drafts, Channels),
+/// failure triage banner, day grouping, swipe actions, skeleton, and empty state.
 struct QueueView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: QueueViewModel?
     @State private var postToConfirmDelete: Post?
     @State private var showsChannels = false
+    @State private var editingDraft: Post?
 
     var body: some View {
         NavigationStack {
@@ -24,7 +25,7 @@ struct QueueView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar { toolbarContent }
             .navigationDestination(for: UUID.self) { postID in
-                if let model, let post = model.posts.first(where: { $0.id == postID }) {
+                if let model, let post = model.posts.first(where: { $0.id == postID }) ?? model.drafts.first(where: { $0.id == postID }) {
                     PostDetailView(
                         post: post,
                         platforms: post.targets.compactMap { model.platform(for: $0) },
@@ -38,6 +39,12 @@ struct QueueView: View {
                     ConnectChannelsView(onFinished: { showsChannels = false })
                         .presentationDetents([.large])
                 }
+            }
+            .fullScreenCover(item: $editingDraft) { draft in
+                ComposerView(editingPost: draft, onSaved: {
+                    editingDraft = nil
+                    Task { await model?.load() }
+                })
             }
             .alert(
                 "Delete this post?",
@@ -91,14 +98,8 @@ struct QueueView: View {
             loadingList
         } else if let error = model.loadError {
             errorView(message: error, model: model)
-        } else if model.posts.isEmpty {
-            EmptyStateView(
-                title: "Nothing planned",
-                message: "Nothing planned. Frame your day.",
-                actionTitle: "Create post",
-                action: {}
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if model.filteredPosts.isEmpty {
+            emptyView(model: model)
         } else {
             queueList(model: model)
         }
@@ -131,10 +132,40 @@ struct QueueView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private func emptyView(model: QueueViewModel) -> some View {
+        VStack {
+            filterChips(model: model)
+                .padding(.horizontal, DayframeSpacing.lg)
+                .padding(.top, DayframeSpacing.sm)
+
+            if case .drafts = model.currentFilter {
+                EmptyStateView(
+                    title: "No drafts",
+                    message: "Save drafts from the composer to review and schedule later.",
+                    actionTitle: "Create post",
+                    action: {}
+                )
+            } else {
+                EmptyStateView(
+                    title: "Nothing planned",
+                    message: "Nothing planned. Frame your day.",
+                    actionTitle: "Create post",
+                    action: {}
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private func queueList(model: QueueViewModel) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: DayframeSpacing.lg) {
+                if !model.failedPosts.isEmpty, model.currentFilter != .drafts {
+                    failedPostsBanner(model: model)
+                }
+
                 filterChips(model: model)
+
                 ForEach(model.daySections, id: \.title) { section in
                     daySection(title: section.title, posts: section.posts, model: model)
                 }
@@ -144,23 +175,55 @@ struct QueueView: View {
         .refreshable { await model.load() }
     }
 
+    private func failedPostsBanner(model: QueueViewModel) -> some View {
+        NavigationLink(value: model.failedPosts.first?.id) {
+            HStack(spacing: DayframeSpacing.md) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color("Danger"))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(model.failedPosts.count) post\(model.failedPosts.count == 1 ? "" : "s") failed to publish")
+                        .font(DayframeFont.headline)
+                        .foregroundStyle(Color("Danger"))
+                    Text("Tap to review the failure reason and retry.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DayframeColor.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DayframeColor.textSecondary)
+            }
+            .padding(DayframeSpacing.md)
+            .background(Color("Danger").opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: DayframeRadius.card, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private func filterChips(model: QueueViewModel) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: DayframeSpacing.sm) {
-                chip(title: "All Channels", isSelected: model.selectedPlatform == nil) {
-                    model.selectedPlatform = nil
+                chip(title: "All Channels", isSelected: model.currentFilter == .all) {
+                    model.currentFilter = .all
                 }
+
+                let draftTitle = model.drafts.isEmpty ? "Drafts" : "Drafts (\(model.drafts.count))"
+                chip(title: draftTitle, isSelected: model.currentFilter == .drafts) {
+                    model.currentFilter = .drafts
+                }
+
                 ForEach(model.channels, id: \.id) { channel in
                     chip(
                         title: channel.platform.displayName,
-                        isSelected: model.selectedPlatform == channel.platform
+                        isSelected: model.currentFilter == .channel(channel.platform)
                     ) {
-                        model.selectedPlatform = channel.platform
+                        model.currentFilter = .channel(channel.platform)
                     }
                 }
             }
         }
-        .accessibilityLabel("Channel filter")
+        .accessibilityLabel("Queue filters")
     }
 
     private func chip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -209,16 +272,21 @@ struct QueueView: View {
     }
 
     private func swipeableCard(post: Post, model: QueueViewModel) -> some View {
-        NavigationLink(value: post.id) {
-            PostCard(
-                platforms: post.targets.compactMap { model.platform(for: $0) },
-                timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? "",
-                status: post.status,
-                bodyText: post.body,
-                mediaCaption: post.media.first?.storagePath
-            )
+        Group {
+            if post.status == .draft {
+                Button {
+                    editingDraft = post
+                } label: {
+                    postCard(for: post, model: model)
+                }
+                .buttonStyle(.plain)
+            } else {
+                NavigationLink(value: post.id) {
+                    postCard(for: post, model: model)
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .buttonStyle(.plain)
         .swipeActions {
             Button(role: .destructive) {
                 postToConfirmDelete = post
@@ -233,15 +301,19 @@ struct QueueView: View {
             .tint(DayframeColor.primary)
         }
     }
+
+    private func postCard(for post: Post, model: QueueViewModel) -> some View {
+        PostCard(
+            platforms: post.targets.compactMap { model.platform(for: $0) },
+            timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? (post.status == .draft ? "Draft" : ""),
+            status: post.status,
+            bodyText: post.body,
+            mediaCaption: post.media.first?.storagePath
+        )
+    }
 }
 
 #Preview("Queue") {
     QueueView()
         .environment(AppEnvironment())
-}
-
-#Preview("Queue dark") {
-    QueueView()
-        .environment(AppEnvironment())
-        .environment(\.colorScheme, .dark)
 }

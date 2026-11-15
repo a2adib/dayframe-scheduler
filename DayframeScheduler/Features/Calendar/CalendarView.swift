@@ -1,8 +1,7 @@
 import SwiftUI
 
 /// Calendar (AppFLOW 2.6, UI_Spec §4.5): month grid with post dots, week
-/// toggle, and a day-post list in a bottom sheet. No Figma frame; UI_Spec
-/// defaults.
+/// toggle, day-post list in a bottom sheet, and direct navigation to Post Detail.
 struct CalendarView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: CalendarViewModel?
@@ -10,8 +9,6 @@ struct CalendarView: View {
     @State private var showsDayList = false
     @State private var selectedPost: Post?
     @State private var showsComposer = false
-
-    private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
 
     var body: some View {
         Group {
@@ -26,7 +23,10 @@ struct CalendarView: View {
         .navigationTitle("Calendar")
         .task {
             if model == nil {
-                let viewModel = CalendarViewModel(postRepository: environment.postRepository)
+                let viewModel = CalendarViewModel(
+                    postRepository: environment.postRepository,
+                    channelRepository: environment.channelRepository
+                )
                 model = viewModel
                 await viewModel.load()
             }
@@ -67,8 +67,27 @@ struct CalendarView: View {
         .sheet(isPresented: $showsDayList) {
             dayList(model: model)
         }
+        .sheet(item: $selectedPost) { post in
+            NavigationStack {
+                PostDetailView(
+                    post: post,
+                    platforms: model.platforms(for: post),
+                    onDeleted: {
+                        selectedPost = nil
+                        Task { await model.load() }
+                    },
+                    onRescheduled: { _ in
+                        selectedPost = nil
+                        Task { await model.load() }
+                    }
+                )
+            }
+        }
         .fullScreenCover(isPresented: $showsComposer) {
-            ComposerView(onSaved: { showsComposer = false })
+            ComposerView(presetDate: model.selectedDate, onSaved: {
+                showsComposer = false
+                Task { await model.load() }
+            })
         }
     }
 
@@ -85,29 +104,36 @@ struct CalendarView: View {
                     title: "Nothing planned",
                     message: "Nothing planned. Frame your day.",
                     actionTitle: "Create post",
-                    action: { showsComposer = true }
+                    action: {
+                        showsDayList = false
+                        showsComposer = true
+                    }
                 )
             } else {
-                ForEach(posts) { post in
-                    Button {
-                        selectedPost = post
-                        showsDayList = false
-                    } label: {
-                        PostCard(
-                            platforms: [.instagram],
-                            timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? "",
-                            status: post.status,
-                            bodyText: post.body,
-                            mediaCaption: post.media.first?.kind == .image ? "Image attached" : nil
-                        )
+                ScrollView {
+                    VStack(spacing: DayframeSpacing.md) {
+                        ForEach(posts) { post in
+                            Button {
+                                showsDayList = false
+                                selectedPost = post
+                            } label: {
+                                PostCard(
+                                    platforms: model.platforms(for: post),
+                                    timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? "",
+                                    status: post.status,
+                                    bodyText: post.body,
+                                    mediaCaption: post.media.first?.kind == .image ? "Image attached" : nil
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
             Spacer()
         }
         .padding(DayframeSpacing.lg)
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }
@@ -249,12 +275,4 @@ private struct WeekStrip: View {
         CalendarView()
     }
     .environment(AppEnvironment())
-}
-
-#Preview("Calendar dark") {
-    NavigationStack {
-        CalendarView()
-    }
-    .environment(AppEnvironment())
-    .environment(\.colorScheme, .dark)
 }

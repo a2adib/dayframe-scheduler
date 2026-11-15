@@ -42,6 +42,10 @@ struct PostTargetRow: Codable {
     var bodyOverride: String?
     var status: String
     var scheduledAt: Date?
+    var externalPostId: String?
+    var attempts: Int?
+    var errorMessage: String?
+    var publishedAt: Date?
 }
 
 struct MediaAssetRow: Codable {
