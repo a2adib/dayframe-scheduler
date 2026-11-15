@@ -43,9 +43,8 @@ enum AppConfig {
     static let defaultSupabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsbHptYnduZHp2YW9vbnllcm92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NjYzMjUsImV4cCI6MjExMDI0MjMyNX0.BKAySseZ-CC4nbbTfIL-yWKnW_s8skFWWOyJXCOjdVo"
 
     /// Default backend mode for standalone app runs on device.
-    /// Defaults to `.mock` so all channels, scheduler, composer, and analytics
-    /// are pre-connected and work immediately without requiring API keys.
-    /// Can be toggled to `.live` in Settings or Connect Channels.
+    /// Defaults to `.live` so real Supabase Cloud data, live OAuth channels,
+    /// real posts, and live scheduling are used.
     static var defaultBackendMode: AppEnvironment.BackendMode {
         if let envMode = ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"],
            let mode = AppEnvironment.BackendMode(rawValue: envMode) {
@@ -55,6 +54,6 @@ enum AppConfig {
            let mode = AppEnvironment.BackendMode(rawValue: savedMode) {
             return mode
         }
-        return .mock
+        return .live
     }
 }

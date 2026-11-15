@@ -16,77 +16,41 @@ struct ConnectChannelsView: View {
     private let allPlatforms: [Platform] = [.x, .linkedin, .facebook, .instagram]
 
     var body: some View {
-        NavigationStack {
-            List {
-                if environment.mode == .live {
-                    Section {
-                        VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
-                            HStack {
-                                Image(systemName: "sparkles")
-                                    .foregroundStyle(DayframeColor.primary)
-                                Text("Testing without social API keys?")
-                                    .font(DayframeFont.headline)
-                                    .foregroundStyle(DayframeColor.textPrimary)
-                            }
-                            Text("Switch to Demo Mode to explore all scheduling, composer, calendar, and analytics features with pre-connected sample channels.")
-                                .font(.system(size: 13))
-                                .foregroundStyle(DayframeColor.textSecondary)
-                            Button("Switch to Demo Mode") {
-                                Task {
-                                    await environment.setBackendMode(.mock)
-                                    await load()
-                                }
-                            }
-                            .font(DayframeFont.chip)
-                            .foregroundStyle(DayframeColor.primary)
-                            .padding(.top, DayframeSpacing.xs)
-                        }
-                        .padding(.vertical, DayframeSpacing.xs)
-                    }
+        List {
+            Section {
+                ForEach(allPlatforms, id: \.self) { platform in
+                    row(platform: platform)
                 }
-                Section {
-                    ForEach(allPlatforms, id: \.self) { platform in
-                        row(platform: platform)
-                    }
-                } header: {
-                    Text("Channels")
-                } footer: {
-                    if limitReached {
-                        Label("Free plan connects up to 3 channels. Upgrade to Pro for unlimited.", systemImage: "lock")
-                            .foregroundStyle(Color("Warning"))
-                    }
+            } header: {
+                Text("Channels")
+            } footer: {
+                if limitReached {
+                    Label("Free plan connects up to 3 channels. Upgrade to Pro for unlimited.", systemImage: "lock")
+                        .foregroundStyle(Color("Warning"))
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Connect Channels")
-            .navigationBarTitleDisplayMode(.inline)
-            .safeAreaInset(edge: .bottom) {
-                if showsDoneButton {
-                    PrimaryButton(title: "Continue", action: onFinished)
-                        .padding(.horizontal, DayframeSpacing.xl)
-                        .padding(.bottom, DayframeSpacing.lg)
-                }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Connect Channels")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            if showsDoneButton {
+                PrimaryButton(title: "Continue", action: onFinished)
+                    .padding(.horizontal, DayframeSpacing.xl)
+                    .padding(.bottom, DayframeSpacing.lg)
             }
-            .task { await load() }
-            .alert(
-                "Couldn't connect",
-                isPresented: Binding(
-                    get: { connectionError != nil },
-                    set: { if !$0 { connectionError = nil } }
-                )
-            ) {
-                if environment.mode == .live {
-                    Button("Switch to Demo Mode") {
-                        Task {
-                            await environment.setBackendMode(.mock)
-                            await load()
-                        }
-                    }
-                }
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(connectionError ?? "")
-            }
+        }
+        .task { await load() }
+        .alert(
+            "Couldn't connect",
+            isPresented: Binding(
+                get: { connectionError != nil },
+                set: { if !$0 { connectionError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(connectionError ?? "")
         }
     }
 
@@ -112,24 +76,46 @@ struct ConnectChannelsView: View {
             Spacer()
             if isConnecting {
                 ProgressView()
+                    .padding(.horizontal, DayframeSpacing.sm)
             } else if let channel {
                 if channel.status == .expired {
-                    Button("Reconnect") { Task { await reconnect(channel) } }
-                        .buttonStyle(.plain)
-                        .font(DayframeFont.chip)
-                        .foregroundStyle(Color("Warning"))
-                        .accessibilityLabel("Reconnect \(platform.displayName)")
+                    Button {
+                        Task { await reconnect(channel) }
+                    } label: {
+                        Text("Reconnect")
+                            .font(DayframeFont.chip)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color("Warning"))
+                            .padding(.horizontal, DayframeSpacing.md)
+                            .padding(.vertical, DayframeSpacing.xs)
+                            .background(Color("Warning").opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.borderless)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Reconnect \(platform.displayName)")
                 } else {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color("Success"))
+                        .font(.system(size: 22))
                         .accessibilityLabel("\(platform.displayName) connected")
                 }
             } else {
-                Button("Connect") { Task { await connect(platform) } }
-                    .buttonStyle(.plain)
-                    .font(DayframeFont.chip)
-                    .foregroundStyle(DayframeColor.primary)
-                    .accessibilityLabel("Connect \(platform.displayName)")
+                Button {
+                    Task { await connect(platform) }
+                } label: {
+                    Text("Connect")
+                        .font(DayframeFont.chip)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(DayframeColor.primary)
+                        .padding(.horizontal, DayframeSpacing.md)
+                        .padding(.vertical, DayframeSpacing.xs)
+                        .background(DayframeColor.primary.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.borderless)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Connect \(platform.displayName)")
             }
         }
         .padding(.vertical, DayframeSpacing.xs)

@@ -31,9 +31,20 @@ final class AppEnvironment {
         case live
     }
 
-    init(mode: BackendMode = BackendMode(rawValue: ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"] ?? "") ?? AppConfig.defaultBackendMode) {
-        self.mode = mode
-        switch mode {
+    init(mode: BackendMode? = nil) {
+        let resolvedMode: BackendMode
+        if let explicitMode = mode {
+            resolvedMode = explicitMode
+        } else if let envMode = ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"],
+                  let parsed = BackendMode(rawValue: envMode) {
+            resolvedMode = parsed
+        } else {
+            // Always default to live Supabase backend for real daily use
+            resolvedMode = .live
+            UserDefaults.standard.set(BackendMode.live.rawValue, forKey: "dayframe_backend_mode")
+        }
+        self.mode = resolvedMode
+        switch resolvedMode {
         case .mock:
             authService = MockAuthService()
             profileRepository = MockProfileRepository()
