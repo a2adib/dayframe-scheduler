@@ -91,6 +91,14 @@ struct AIAssistantSheet: View {
                     polishTone()
                 }
             }
+            HStack(spacing: DayframeSpacing.sm) {
+                actionPill("✂️ Shorten", actionKey: "shorten") {
+                    generateShorten()
+                }
+                actionPill("📖 Expand", actionKey: "expand") {
+                    generateExpand()
+                }
+            }
             actionPill("🏷️ Generate 5 Niche Hashtags", actionKey: "hashtags") {
                 generateHashtags()
             }
@@ -243,6 +251,38 @@ struct AIAssistantSheet: View {
                     title: "Polished & Clear",
                     content: "\(base)\n\nExcited to hear what everyone thinks!",
                     subtitle: "Smooth Flow"
+                )
+            ]
+            isGenerating = false
+        }
+    }
+
+    private func generateShorten() {
+        isGenerating = true
+        let base = cleanBase()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let sentences = base.components(separatedBy: CharacterSet(charactersIn: ".!?\n")).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            let shortened = sentences.first ?? String(base.prefix(120))
+            suggestions = [
+                AISuggestion(
+                    title: "Concise & Punchy",
+                    content: "\(shortened.trimmingCharacters(in: .whitespaces)).",
+                    subtitle: "TL;DR"
+                )
+            ]
+            isGenerating = false
+        }
+    }
+
+    private func generateExpand() {
+        isGenerating = true
+        let base = cleanBase()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            suggestions = [
+                AISuggestion(
+                    title: "Expanded Narrative",
+                    content: "\(base)\n\nHere are 3 reasons why this matters:\n1. Keeps quality consistent over time\n2. Removes last-minute stress\n3. Makes audience engagement predictable\n\nWhat has your experience been?",
+                    subtitle: "Story Flow"
                 )
             ]
             isGenerating = false

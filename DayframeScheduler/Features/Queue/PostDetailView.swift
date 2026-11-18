@@ -36,12 +36,16 @@ struct PostDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") {
-                    showsComposer = true
+                // Published or in-flight posts can't be edited: re-saving would
+                // send them to the platform a second time.
+                if displayPost.status != .published && displayPost.status != .publishing {
+                    Button("Edit") {
+                        showsComposer = true
+                    }
+                    .font(DayframeFont.headline)
+                    .foregroundStyle(DayframeColor.primary)
+                    .accessibilityLabel("Edit post")
                 }
-                .font(DayframeFont.headline)
-                .foregroundStyle(DayframeColor.primary)
-                .accessibilityLabel("Edit post")
             }
         }
         .fullScreenCover(isPresented: $showsComposer) {
@@ -87,7 +91,12 @@ struct PostDetailView: View {
     }
 
     private var preview: some View {
-        PreviewPane(platform: platforms.first ?? .instagram, bodyText: displayPost.body)
+        PlatformPreviewCard(
+            platform: platforms.first ?? .instagram,
+            bodyText: displayPost.body,
+            firstComment: displayPost.firstComment
+        )
+        .padding(.horizontal, DayframeSpacing.lg)
     }
 
     private var meta: some View {

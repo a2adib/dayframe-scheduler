@@ -7,6 +7,11 @@ enum QueueFilter: Hashable, Equatable {
     case channel(Platform)
 }
 
+enum MoveDirection {
+    case up
+    case down
+}
+
 @Observable
 @MainActor
 final class QueueViewModel {
@@ -106,6 +111,69 @@ final class QueueViewModel {
         if let copy = try? await postRepository.duplicate(post) {
             posts.append(copy)
         }
+    }
+
+    // MARK: - Queue Reordering & Shuffle
+
+    /// Only future, still-scheduled posts visible under the current filter can
+    /// be reordered. Published/failed history must never receive a new time,
+    /// and a scheduled post must never be handed a past time (it would publish
+    /// immediately).
+    private func reorderablePosts() -> [Post] {
+        let visible = Set(filteredPosts.map(\.id))
+        let now = Date.now
+        return posts
+            .filter { post in
+                guard post.status == .scheduled, visible.contains(post.id),
+                      let scheduledAt = post.scheduledAt else { return false }
+                return scheduledAt > now
+            }
+            .sorted { ($0.scheduledAt ?? .distantPast) < ($1.scheduledAt ?? .distantPast) }
+    }
+
+    private func setTime(_ date: Date, on post: Post) -> Post {
+        var updated = post
+        updated.scheduledAt = date
+        updated.targets = post.targets.map { var t = $0; t.scheduledAt = date; return t }
+        return updated
+    }
+
+    private func apply(_ changed: [Post]) async {
+        let byID = Dictionary(uniqueKeysWithValues: changed.map { ($0.id, $0) })
+        let previous = posts
+        posts = posts
+            .map { byID[$0.id] ?? $0 }
+            .sorted { ($0.scheduledAt ?? .distantPast) < ($1.scheduledAt ?? .distantPast) }
+        do {
+            try await postRepository.reorderQueue(posts: changed)
+        } catch {
+            posts = previous
+            loadError = "Couldn't reorder the queue. Please try again."
+        }
+    }
+
+    func movePost(_ post: Post, direction: MoveDirection) async {
+        let reorderable = reorderablePosts()
+        guard let currentIndex = reorderable.firstIndex(where: { $0.id == post.id }) else { return }
+        let targetIndex = direction == .up ? currentIndex - 1 : currentIndex + 1
+        guard reorderable.indices.contains(targetIndex),
+              let currentTime = reorderable[currentIndex].scheduledAt,
+              let targetTime = reorderable[targetIndex].scheduledAt else { return }
+
+        // Swap timestamps so the timeline slots stay put while posts move.
+        await apply([
+            setTime(targetTime, on: reorderable[currentIndex]),
+            setTime(currentTime, on: reorderable[targetIndex]),
+        ])
+    }
+
+    func shuffleQueue() async {
+        let reorderable = reorderablePosts()
+        guard reorderable.count > 1 else { return }
+        // Keep the slot times fixed and shuffle which post lands in each.
+        let timestamps = reorderable.compactMap(\.scheduledAt)
+        let shuffled = reorderable.shuffled()
+        await apply(zip(shuffled, timestamps).map { setTime($1, on: $0) })
     }
 
     func platform(for target: PostTarget) -> Platform? {

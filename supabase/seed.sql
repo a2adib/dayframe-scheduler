@@ -60,6 +60,23 @@ insert into posting_slots (user_id, weekday, local_time, active) values
 
 insert into notification_prefs (user_id) values ('11111111-1111-1111-1111-111111111111');
 
+-- ── User A: ideas board and community engagement items ──────────────────────
+insert into ideas (id, user_id, title, notes, stage, tags, link) values
+  ('aaaa4444-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'Why 90% of creators burn out', 'Break down the creator treadmill vs sustainable batching. Mention 3 systems that worked for us.', 'raw', array['creator-economy', 'productivity'], 'https://dayframe.app/blog/burnout'),
+  ('aaaa4444-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111',
+   '10 AI tools that save 10 hours a week', 'Outline: 1. Research 2. Voice transcription 3. Graphic resizing 4. Repurposing 5. Dayframe scheduler.', 'drafting', array['ai', 'tools', 'tips'], null),
+  ('aaaa4444-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111',
+   'Behind the scenes iOS 18 widgets', 'Show our interactive calendar widgets with swift animations. Include video clip.', 'ready', array['ios', 'buildinpublic', 'swiftui'], 'https://x.com/adib');
+
+insert into engagement_items (id, user_id, channel_id, post_id, author_name, author_handle, content, platform, is_replied, is_starred) values
+  ('aaaa5555-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'aaaa1111-0000-0000-0000-000000000001', 'aaaa2222-0000-0000-0000-000000000001',
+   'Sarah Lin', '@sarahlin_designs', 'Love this approach! How do you handle spontaneous posts alongside scheduled queues?', 'instagram'::platform, false, true),
+  ('aaaa5555-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111',
+   'aaaa1111-0000-0000-0000-000000000002', 'aaaa2222-0000-0000-0000-000000000001',
+   'Marcus Vance', '@marcus_v', 'This routine literally saved my mornings last week. Highly recommend framing the day first!', 'x'::platform, true, false);
+
 -- ── User B: one channel, no posts (empty-queue test case) ────────────────────
 insert into channels (id, user_id, platform, external_account_id, handle, display_name, status) values
   ('bbbb1111-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'tiktok', 'tt-1', '@adibmakes', 'Adib Makes', 'connected'::channel_status);

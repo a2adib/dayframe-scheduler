@@ -51,6 +51,7 @@ struct PlatformBadge: View {
         case .x: AnyShapeStyle(.black)
         case .linkedin: AnyShapeStyle(Color(red: 0.04, green: 0.40, blue: 0.76))
         case .facebook: AnyShapeStyle(Color(red: 0.09, green: 0.45, blue: 0.93))
+        case .threads: AnyShapeStyle(.black)
         case .tiktok: AnyShapeStyle(.black)
         case .youtube: AnyShapeStyle(.red)
         }
@@ -66,6 +67,7 @@ struct PlatformBadge: View {
         case .x: Text("𝕏")
         case .linkedin: Text("in")
         case .facebook: Text("f")
+        case .threads: Text("@")
         case .youtube: Image(systemName: "play.fill")
         case .tiktok: Image(systemName: "music.note")
         case .instagram: Image(systemName: "camera.fill")
@@ -80,6 +82,7 @@ extension Platform {
         case .x: "X (Twitter)"
         case .linkedin: "LinkedIn"
         case .facebook: "Facebook"
+        case .threads: "Threads"
         case .tiktok: "TikTok"
         case .youtube: "YouTube"
         }

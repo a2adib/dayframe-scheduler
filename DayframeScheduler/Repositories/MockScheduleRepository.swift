@@ -12,7 +12,23 @@ final class MockScheduleRepository: ScheduleRepository {
     }
 
     func setSlotActive(_ slot: PostingSlot, isActive: Bool) async throws {
-        slots = slots.map { $0.id == slot.id ? slot : $0 }
+        slots = slots.map { $0.id == slot.id ? PostingSlot(id: $0.id, weekday: $0.weekday, minutesFromMidnight: $0.minutesFromMidnight, channelID: $0.channelID, isActive: isActive) : $0 }
+    }
+
+    func addSlot(weekday: Int, minutesFromMidnight: Int, channelID: UUID?) async throws -> PostingSlot {
+        let newSlot = PostingSlot(
+            id: UUID(),
+            weekday: weekday,
+            minutesFromMidnight: minutesFromMidnight,
+            channelID: channelID,
+            isActive: true
+        )
+        slots.append(newSlot)
+        return newSlot
+    }
+
+    func deleteSlot(_ slot: PostingSlot) async throws {
+        slots.removeAll { $0.id == slot.id }
     }
 
     func nextQueueSlot(after date: Date) async throws -> Date {

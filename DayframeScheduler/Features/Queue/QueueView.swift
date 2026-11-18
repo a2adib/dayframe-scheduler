@@ -1,23 +1,52 @@
 import SwiftUI
 
-/// Queue screen, matching the Figma "Code" frame (node 4-3): logo mark + title
-/// nav bar with a Channels pill, filter chips (All, Drafts, Channels),
-/// failure triage banner, day grouping, swipe actions, skeleton, and empty state.
+/// Queue screen, matching the Figma "Code" frame (node 4-3):
+/// - Integrated Queue & Ideas Board (Kanban Content Bank) switcher
+/// - Chronological feed grouped by day/slot with drag-and-drop / Move Up / Move Down / Shuffle reordering
+/// - Direct access to Unified Community Engagement Inbox with unread badge
+/// - Multi-channel filtering & failure triage banner
 struct QueueView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: QueueViewModel?
     @State private var postToConfirmDelete: Post?
     @State private var showsChannels = false
+    @State private var showsInbox = false
     @State private var editingDraft: Post?
+    @State private var selectedTopTab: TopTab = .queue
+
+    enum TopTab: String, CaseIterable, Identifiable {
+        case queue = "Queue"
+        case ideas = "Ideas Board"
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         NavigationStack {
-            Group {
-                if let model {
-                    content(model: model)
+            VStack(spacing: 0) {
+                // Top Tab Switcher: Queue vs Ideas Board
+                Picker("", selection: $selectedTopTab) {
+                    Text("Queue").tag(TopTab.queue)
+                    Text("Ideas Board").tag(TopTab.ideas)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, DayframeSpacing.lg)
+                .padding(.top, DayframeSpacing.xs)
+                .padding(.bottom, DayframeSpacing.xs)
+
+                Divider()
+
+                if selectedTopTab == .ideas {
+                    IdeasBoardView()
                 } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Group {
+                        if let model {
+                            content(model: model)
+                        } else {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    }
                 }
             }
             .background(DayframeColor.background)
@@ -37,6 +66,12 @@ struct QueueView: View {
             .sheet(isPresented: $showsChannels) {
                 NavigationStack {
                     ConnectChannelsView(onFinished: { showsChannels = false })
+                        .presentationDetents([.large])
+                }
+            }
+            .sheet(isPresented: $showsInbox) {
+                NavigationStack {
+                    EngagementInboxView()
                         .presentationDetents([.large])
                 }
             }
@@ -81,14 +116,49 @@ struct QueueView: View {
         ToolbarItem(placement: .principal) {
             HStack(spacing: DayframeSpacing.sm) {
                 DayframeLogoMark(size: 24)
-                Text("Queue")
-                    .font(DayframeFont.largeTitle(28))
+                Text(selectedTopTab == .queue ? "Queue" : "Ideas")
+                    .font(DayframeFont.largeTitle(26))
                     .foregroundStyle(DayframeColor.textPrimary)
             }
             .accessibilityElement(children: .combine)
         }
+
         ToolbarItem(placement: .navigationBarTrailing) {
-            SecondaryButton(title: "Channels") { showsChannels = true }
+            HStack(spacing: DayframeSpacing.sm) {
+                // Unified Community Engagement Inbox Button with Unread Badge
+                Button {
+                    showsInbox = true
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .font(.system(size: 17))
+                            .foregroundStyle(DayframeColor.textPrimary)
+
+                        Circle()
+                            .fill(DayframeColor.primary)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 4, y: -4)
+                    }
+                }
+                .accessibilityLabel("Community Inbox")
+
+                // Queue Actions Menu (Shuffle Queue, Reorder)
+                if selectedTopTab == .queue {
+                    Menu {
+                        Button {
+                            Task { await model?.shuffleQueue() }
+                        } label: {
+                            Label("Shuffle Queue", systemImage: "shuffle")
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down.circle")
+                            .font(.system(size: 18))
+                            .foregroundStyle(DayframeColor.textSecondary)
+                    }
+                }
+
+                SecondaryButton(title: "Channels") { showsChannels = true }
+            }
         }
     }
 
@@ -148,7 +218,7 @@ struct QueueView: View {
             } else {
                 EmptyStateView(
                     title: "Nothing planned",
-                    message: "Nothing planned. Frame your day.",
+                    message: "Nothing planned. Frame your day with consistent publishing.",
                     actionTitle: "Create post",
                     action: {}
                 )
@@ -238,7 +308,7 @@ struct QueueView: View {
                 .clipShape(Capsule())
         }
         .accessibilityLabel("Filter by \(title)")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private func daySection(title: String, posts: [Post], model: QueueViewModel) -> some View {
@@ -287,7 +357,49 @@ struct QueueView: View {
                 .buttonStyle(.plain)
             }
         }
-        .swipeActions {
+        .contextMenu {
+            Button {
+                Task { await model.movePost(post, direction: .up) }
+            } label: {
+                Label("Move Up in Queue", systemImage: "arrow.up")
+            }
+
+            Button {
+                Task { await model.movePost(post, direction: .down) }
+            } label: {
+                Label("Move Down in Queue", systemImage: "arrow.down")
+            }
+
+            Button {
+                Task { await model.duplicate(post) }
+            } label: {
+                Label("Duplicate", systemImage: "plus.square.on.square")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                postToConfirmDelete = post
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .leading) {
+            Button {
+                Task { await model.movePost(post, direction: .up) }
+            } label: {
+                Label("Move Up", systemImage: "arrow.up")
+            }
+            .tint(DayframeColor.primary)
+
+            Button {
+                Task { await model.movePost(post, direction: .down) }
+            } label: {
+                Label("Move Down", systemImage: "arrow.down")
+            }
+            .tint(Color.indigo)
+        }
+        .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 postToConfirmDelete = post
             } label: {
@@ -308,7 +420,8 @@ struct QueueView: View {
             timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? (post.status == .draft ? "Draft" : ""),
             status: post.status,
             bodyText: post.body,
-            mediaCaption: post.media.first?.storagePath
+            mediaCaption: post.media.first?.storagePath,
+            hasFirstComment: post.firstComment != nil && !post.firstComment!.isEmpty
         )
     }
 }

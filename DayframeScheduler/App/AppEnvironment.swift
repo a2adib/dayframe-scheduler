@@ -14,6 +14,8 @@ final class AppEnvironment {
     private(set) var postRepository: PostRepository
     private(set) var analyticsRepository: AnalyticsRepository
     private(set) var scheduleRepository: ScheduleRepository
+    private(set) var ideaRepository: IdeaRepository
+    private(set) var engagementRepository: EngagementRepository
 
     private(set) var currentUser: AuthUser?
     private(set) var currentProfile: Profile?
@@ -52,6 +54,8 @@ final class AppEnvironment {
             postRepository = MockPostRepository()
             analyticsRepository = MockAnalyticsRepository()
             scheduleRepository = MockScheduleRepository()
+            ideaRepository = MockIdeaRepository()
+            engagementRepository = MockEngagementRepository()
         case .live:
             let client = SupabaseService.makeClient()
             authService = LiveAuthService(client: client)
@@ -60,6 +64,8 @@ final class AppEnvironment {
             postRepository = LivePostRepository(client: client)
             analyticsRepository = LiveAnalyticsRepository(client: client)
             scheduleRepository = LiveScheduleRepository(client: client)
+            ideaRepository = LiveIdeaRepository(client: client)
+            engagementRepository = LiveEngagementRepository(client: client)
         }
     }
 
@@ -75,6 +81,8 @@ final class AppEnvironment {
             self.postRepository = MockPostRepository()
             self.analyticsRepository = MockAnalyticsRepository()
             self.scheduleRepository = MockScheduleRepository()
+            self.ideaRepository = MockIdeaRepository()
+            self.engagementRepository = MockEngagementRepository()
         case .live:
             let client = SupabaseService.makeClient()
             self.authService = LiveAuthService(client: client)
@@ -83,6 +91,8 @@ final class AppEnvironment {
             self.postRepository = LivePostRepository(client: client)
             self.analyticsRepository = LiveAnalyticsRepository(client: client)
             self.scheduleRepository = LiveScheduleRepository(client: client)
+            self.ideaRepository = LiveIdeaRepository(client: client)
+            self.engagementRepository = LiveEngagementRepository(client: client)
         }
         await restoreSession()
     }

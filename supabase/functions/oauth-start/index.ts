@@ -1,7 +1,7 @@
 // oauth-start: the app calls this with its JWT and a platform; it returns the
 // provider authorize URL carrying a signed, short-lived state (and PKCE where
 // the provider supports it).
-import { callbackUrl, codeChallenge, codeVerifier, providerConfig, signState } from "../_shared/providers.ts";
+import { callbackUrl, codeChallenge, codeVerifier, createOAuthState, providerConfig } from "../_shared/providers.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -40,12 +40,15 @@ Deno.serve(async (req) => {
   }
 
   const verifier = config.usesPkce ? codeVerifier() : undefined;
-  const state = await signState({
-    userId,
-    platform,
-    codeVerifier: verifier,
-    exp: Date.now() + 10 * 60 * 1000,
-  });
+  let state: string;
+  try {
+    state = await createOAuthState({ userId, platform, codeVerifier: verifier }, 10 * 60 * 1000);
+  } catch (error) {
+    return Response.json(
+      { code: "server_error", message: error instanceof Error ? error.message : "Could not start sign-in." },
+      { status: 500, headers: CORS },
+    );
+  }
 
   const params = new URLSearchParams({
     response_type: "code",

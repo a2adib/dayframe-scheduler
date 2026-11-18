@@ -12,6 +12,7 @@ final class CalendarViewModel {
     private(set) var isLoading = false
     var selectedDate: Date?
     var showsWeek = false
+    var selectedPlatform: Platform?
 
     init(
         postRepository: PostRepository,
@@ -36,12 +37,32 @@ final class CalendarViewModel {
     }
 
     func posts(on date: Date) -> [Post] {
-        postsByDay[Calendar.current.startOfDay(for: date)] ?? []
+        let all = postsByDay[Calendar.current.startOfDay(for: date)] ?? []
+        guard let platform = selectedPlatform else { return all }
+        return all.filter { post in
+            let postPlatforms = platforms(for: post)
+            return postPlatforms.contains(platform)
+        }
     }
 
     func platforms(for post: Post) -> [Platform] {
         let channelIDs = Set(post.targets.map(\.channelID))
         let matched = channels.filter { channelIDs.contains($0.id) }.map(\.platform)
         return matched.isEmpty ? [.instagram] : matched
+    }
+
+    func reschedule(post: Post, to newDate: Date) async {
+        if let updated = try? await postRepository.reschedule(post, to: newDate) {
+            let calendar = Calendar.current
+            // Remove from old date
+            if let oldDate = post.scheduledAt {
+                let oldDay = calendar.startOfDay(for: oldDate)
+                postsByDay[oldDay]?.removeAll { $0.id == post.id }
+            }
+            // Add to new date
+            let newDay = calendar.startOfDay(for: newDate)
+            postsByDay[newDay, default: []].append(updated)
+            postsByDay[newDay]?.sort { ($0.scheduledAt ?? .distantPast) < ($1.scheduledAt ?? .distantPast) }
+        }
     }
 }

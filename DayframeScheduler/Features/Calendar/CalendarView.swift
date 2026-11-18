@@ -1,13 +1,17 @@
 import SwiftUI
 
-/// Calendar (AppFLOW 2.6, UI_Spec §4.5): month grid with post dots, week
-/// toggle, day-post list in a bottom sheet, and direct navigation to Post Detail.
+/// Visual Content Calendar (AppFLOW 2.6, UI_Spec §4.5):
+/// - Weekly and monthly calendar views showing post thumbnails and platform badges
+/// - Interactive rescheduling across dates with 1-tap or drag action
+/// - Direct channel filtering across calendar schedules
 struct CalendarView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: CalendarViewModel?
     @State private var monthAnchor = Date.now
     @State private var showsDayList = false
     @State private var selectedPost: Post?
+    @State private var postToReschedule: Post?
+    @State private var rescheduleTargetDate = Date.now
     @State private var showsComposer = false
 
     var body: some View {
@@ -35,16 +39,34 @@ struct CalendarView: View {
 
     private func calendar(model: CalendarViewModel) -> some View {
         VStack(spacing: DayframeSpacing.md) {
-            Picker("View", selection: Binding(
-                get: { model.showsWeek },
-                set: { model.showsWeek = $0 }
-            )) {
-                Text("Month").tag(false)
-                Text("Week").tag(true)
+            // View Mode Toggle (Month vs Week)
+            HStack {
+                Picker("View", selection: Binding(
+                    get: { model.showsWeek },
+                    set: { model.showsWeek = $0 }
+                )) {
+                    Text("Month").tag(false)
+                    Text("Week").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .tint(DayframeColor.primary)
             }
-            .pickerStyle(.segmented)
-            .tint(DayframeColor.primary)
             .padding(.horizontal, DayframeSpacing.lg)
+
+            // Platform Filter Chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: DayframeSpacing.sm) {
+                    filterChip("All", isSelected: model.selectedPlatform == nil) {
+                        model.selectedPlatform = nil
+                    }
+                    ForEach(model.channels, id: \.id) { channel in
+                        filterChip(channel.platform.displayName, isSelected: model.selectedPlatform == channel.platform) {
+                            model.selectedPlatform = channel.platform
+                        }
+                    }
+                }
+                .padding(.horizontal, DayframeSpacing.lg)
+            }
 
             if model.showsWeek {
                 WeekStrip(model: model, onTapDay: { day in
@@ -61,6 +83,7 @@ struct CalendarView: View {
                     }
                 )
             }
+
             Spacer()
         }
         .padding(.top, DayframeSpacing.md)
@@ -83,12 +106,29 @@ struct CalendarView: View {
                 )
             }
         }
+        .sheet(item: $postToReschedule) { post in
+            rescheduleSheet(for: post, model: model)
+        }
         .fullScreenCover(isPresented: $showsComposer) {
             ComposerView(presetDate: model.selectedDate, onSaved: {
                 showsComposer = false
                 Task { await model.load() }
             })
         }
+    }
+
+    private func filterChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(DayframeFont.caption)
+                .fontWeight(isSelected ? .bold : .regular)
+                .foregroundStyle(isSelected ? .white : DayframeColor.textSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? AnyShapeStyle(DayframeColor.primary) : AnyShapeStyle(DayframeColor.surface))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private func dayList(model: CalendarViewModel) -> some View {
@@ -101,9 +141,9 @@ struct CalendarView: View {
             )
             if posts.isEmpty {
                 EmptyStateView(
-                    title: "Nothing planned",
-                    message: "Nothing planned. Frame your day.",
-                    actionTitle: "Create post",
+                    title: "Nothing scheduled",
+                    message: "No posts scheduled for this day yet.",
+                    actionTitle: "Schedule for this day",
                     action: {
                         showsDayList = false
                         showsComposer = true
@@ -113,19 +153,40 @@ struct CalendarView: View {
                 ScrollView {
                     VStack(spacing: DayframeSpacing.md) {
                         ForEach(posts) { post in
-                            Button {
-                                showsDayList = false
-                                selectedPost = post
-                            } label: {
-                                PostCard(
-                                    platforms: model.platforms(for: post),
-                                    timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? "",
-                                    status: post.status,
-                                    bodyText: post.body,
-                                    mediaCaption: post.media.first?.kind == .image ? "Image attached" : nil
-                                )
+                            VStack(alignment: .trailing, spacing: 6) {
+                                Button {
+                                    showsDayList = false
+                                    selectedPost = post
+                                } label: {
+                                    PostCard(
+                                        platforms: model.platforms(for: post),
+                                        timeText: post.scheduledAt?.formatted(.dateTime.hour().minute()) ?? "",
+                                        status: post.status,
+                                        bodyText: post.body,
+                                        mediaCaption: post.media.first?.kind == .image ? "Photo attached" : nil,
+                                        hasFirstComment: post.firstComment != nil && !post.firstComment!.isEmpty
+                                    )
+                                }
+                                .buttonStyle(.plain)
+
+                                HStack {
+                                    Button {
+                                        postToReschedule = post
+                                        rescheduleTargetDate = post.scheduledAt ?? date
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "calendar.badge.clock")
+                                            Text("Reschedule")
+                                        }
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(DayframeColor.primary)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(DayframeColor.primary.opacity(0.1))
+                                        .clipShape(Capsule())
+                                    }
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -136,9 +197,38 @@ struct CalendarView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
+
+    private func rescheduleSheet(for post: Post, model: CalendarViewModel) -> some View {
+        NavigationStack {
+            Form {
+                Section("Pick New Date & Time") {
+                    DatePicker("Scheduled At", selection: $rescheduleTargetDate, in: .now..., displayedComponents: [.date, .hourAndMinute])
+                        .datePickerStyle(.graphical)
+                }
+            }
+            .navigationTitle("Reschedule Post")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { postToReschedule = nil }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Confirm") {
+                        Task {
+                            await model.reschedule(post: post, to: rescheduleTargetDate)
+                            postToReschedule = nil
+                        }
+                    }
+                    .font(DayframeFont.headline)
+                    .foregroundStyle(DayframeColor.primary)
+                }
+            }
+        }
+        .presentationDetents([.large])
+    }
 }
 
-/// Month grid with dots on days that have posts.
+/// Month grid with post thumbnail dots and platform icons.
 private struct MonthGrid: View {
     @Binding var monthAnchor: Date
     var model: CalendarViewModel
@@ -209,30 +299,41 @@ private struct MonthGrid: View {
             if let day {
                 let isToday = calendar.isDateInToday(day)
                 let isSelected = model.selectedDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
+                let dayPosts = model.posts(on: day)
                 Button {
                     onTapDay(day)
                 } label: {
-                    VStack(spacing: DayframeSpacing.xs) {
+                    VStack(spacing: 3) {
                         Text(String(calendar.component(.day, from: day)))
                             .font(DayframeFont.chip)
                             .foregroundStyle(isSelected ? .white : DayframeColor.textPrimary)
                             .frame(width: 32, height: 32)
                             .background(isSelected ? AnyShapeStyle(DayframeColor.primary) : isToday ? AnyShapeStyle(DayframeColor.surface) : AnyShapeStyle(.clear))
                             .clipShape(Circle())
-                        Circle()
-                            .fill(model.posts(on: day).isEmpty ? .clear : DayframeColor.primary)
-                            .frame(width: 5, height: 5)
+
+                        if !dayPosts.isEmpty {
+                            HStack(spacing: 2) {
+                                ForEach(dayPosts.prefix(2)) { post in
+                                    if let platform = model.platforms(for: post).first {
+                                        PlatformBadge(platform: platform, size: 8)
+                                    }
+                                }
+                            }
+                            .frame(height: 8)
+                        } else {
+                            Circle().fill(Color.clear).frame(height: 8)
+                        }
                     }
                 }
-                .accessibilityLabel("\(day.formatted(.dateTime.month().day())), \(model.posts(on: day).count) posts")
+                .accessibilityLabel("\(day.formatted(.dateTime.month().day())), \(dayPosts.count) posts")
             } else {
-                Color.clear.frame(height: 38)
+                Color.clear.frame(height: 42)
             }
         }
     }
 }
 
-/// Week view: one horizontal strip of the current week's days.
+/// Week view: one horizontal strip of the current week's days with post preview cards.
 private struct WeekStrip: View {
     var model: CalendarViewModel
     var onTapDay: (Date) -> Void
@@ -240,33 +341,45 @@ private struct WeekStrip: View {
     var body: some View {
         let calendar = Calendar.current
         let start = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
-        return HStack(spacing: DayframeSpacing.sm) {
-            ForEach(0..<7, id: \.self) { offset in
-                let day = calendar.date(byAdding: .day, value: offset, to: start) ?? .now
-                let isSelected = model.selectedDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
-                Button {
-                    onTapDay(day)
-                } label: {
-                    VStack(spacing: DayframeSpacing.xs) {
-                        Text(day.formatted(.dateTime.weekday(.narrow)))
-                            .font(DayframeFont.caption)
-                            .foregroundStyle(DayframeColor.textTertiary)
-                        Text(String(calendar.component(.day, from: day)))
-                            .font(DayframeFont.chip)
-                            .foregroundStyle(isSelected ? .white : DayframeColor.textPrimary)
-                            .frame(width: 36, height: 36)
-                            .background(isSelected ? AnyShapeStyle(DayframeColor.primary) : AnyShapeStyle(DayframeColor.surface))
-                            .clipShape(Circle())
-                        Circle()
-                            .fill(model.posts(on: day).isEmpty ? .clear : DayframeColor.primary)
-                            .frame(width: 5, height: 5)
+        return VStack(spacing: DayframeSpacing.md) {
+            HStack(spacing: DayframeSpacing.sm) {
+                ForEach(0..<7, id: \.self) { offset in
+                    let day = calendar.date(byAdding: .day, value: offset, to: start) ?? .now
+                    let isSelected = model.selectedDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
+                    let posts = model.posts(on: day)
+                    Button {
+                        onTapDay(day)
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(day.formatted(.dateTime.weekday(.narrow)))
+                                .font(DayframeFont.caption)
+                                .foregroundStyle(DayframeColor.textTertiary)
+                            Text(String(calendar.component(.day, from: day)))
+                                .font(DayframeFont.chip)
+                                .foregroundStyle(isSelected ? .white : DayframeColor.textPrimary)
+                                .frame(width: 36, height: 36)
+                                .background(isSelected ? AnyShapeStyle(DayframeColor.primary) : AnyShapeStyle(DayframeColor.surface))
+                                .clipShape(Circle())
+
+                            if !posts.isEmpty {
+                                HStack(spacing: 2) {
+                                    ForEach(posts.prefix(2)) { post in
+                                        if let platform = model.platforms(for: post).first {
+                                            PlatformBadge(platform: platform, size: 9)
+                                        }
+                                    }
+                                }
+                            } else {
+                                Color.clear.frame(height: 9)
+                            }
+                        }
+                        .padding(DayframeSpacing.xs)
                     }
-                    .padding(DayframeSpacing.xs)
+                    .accessibilityLabel("\(day.formatted(.dateTime.month().day())), \(posts.count) posts")
                 }
-                .accessibilityLabel("\(day.formatted(.dateTime.month().day())), \(model.posts(on: day).count) posts")
             }
+            .padding(.horizontal, DayframeSpacing.md)
         }
-        .padding(.horizontal, DayframeSpacing.md)
     }
 }
 

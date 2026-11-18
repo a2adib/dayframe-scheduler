@@ -9,6 +9,7 @@ struct Post: Identifiable, Equatable {
     var publishedAt: Date?
     var targets: [PostTarget]
     var media: [MediaAsset]
+    var firstComment: String? = nil
 
     /// Derived status is stored on the post (Schema.md section 4); targets may
     /// differ per channel.

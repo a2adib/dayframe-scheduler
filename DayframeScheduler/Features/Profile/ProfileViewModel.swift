@@ -45,6 +45,26 @@ final class ProfileViewModel {
         }
     }
 
+    func addSlot(weekday: Int, time: Date, channelID: UUID?) async {
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: time)
+        let minute = calendar.component(.minute, from: time)
+        let minutesFromMidnight = hour * 60 + minute
+
+        if let newSlot = try? await scheduleRepository.addSlot(
+            weekday: weekday,
+            minutesFromMidnight: minutesFromMidnight,
+            channelID: channelID
+        ) {
+            slots.append(newSlot)
+        }
+    }
+
+    func deleteSlot(_ slot: PostingSlot) async {
+        try? await scheduleRepository.deleteSlot(slot)
+        slots.removeAll { $0.id == slot.id }
+    }
+
     func setNotification(_ keyPath: WritableKeyPath<NotificationPreferences, Bool>, to value: Bool) {
         notifications[keyPath: keyPath] = value
     }

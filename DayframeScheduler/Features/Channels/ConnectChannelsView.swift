@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Connect Channels: platform list with Connect buttons, connected state with
-/// a green check, and a Reconnect badge for expired tokens (AppFLOW 2.2,
-/// UI_Spec §4.2). Mock OAuth connects after a short delay.
+/// Connect Channels: platform list with multi-channel support (Instagram, Facebook,
+/// LinkedIn, X, Threads, TikTok), connection health badges (Connected, Needs Reauth,
+/// Paused), per-channel "Pause Queue" toggle, and active account management.
 struct ConnectChannelsView: View {
     var onFinished: () -> Void
     var showsDoneButton: Bool = true
@@ -12,21 +12,75 @@ struct ConnectChannelsView: View {
     @State private var connectingPlatform: Platform?
     @State private var limitReached = false
     @State private var connectionError: String?
+    @State private var channelFilter: ChannelGroupFilter = .all
 
-    private let allPlatforms: [Platform] = [.x, .linkedin, .facebook, .instagram]
+    enum ChannelGroupFilter: String, CaseIterable, Identifiable {
+        case all = "All"
+        case active = "Active"
+        case paused = "Paused"
+        case needsAttention = "Needs Reauth"
+
+        var id: String { rawValue }
+    }
+
+    private let allPlatforms: [Platform] = [
+        .instagram,
+        .facebook,
+        .linkedin,
+        .x,
+        .threads,
+        .tiktok
+    ]
+
+    var filteredChannels: [Channel] {
+        switch channelFilter {
+        case .all:
+            return channels
+        case .active:
+            return channels.filter { $0.connectionHealth == .connected }
+        case .paused:
+            return channels.filter { $0.connectionHealth == .paused }
+        case .needsAttention:
+            return channels.filter { $0.connectionHealth == .needsReauth }
+        }
+    }
 
     var body: some View {
         List {
+            if !channels.isEmpty {
+                Section {
+                    Picker("Filter Channels", selection: $channelFilter) {
+                        ForEach(ChannelGroupFilter.allCases) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                    .listRowBackground(Color.clear)
+                }
+            }
+
             Section {
                 ForEach(allPlatforms, id: \.self) { platform in
-                    row(platform: platform)
+                    channelRow(platform: platform)
                 }
             } header: {
-                Text("Channels")
+                HStack {
+                    Text("Social Profiles")
+                    Spacer()
+                    Text("\(channels.count) Connected")
+                        .font(DayframeFont.caption)
+                        .foregroundStyle(DayframeColor.textSecondary)
+                }
             } footer: {
-                if limitReached {
-                    Label("Free plan connects up to 3 channels. Upgrade to Pro for unlimited.", systemImage: "lock")
-                        .foregroundStyle(Color("Warning"))
+                VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
+                    if limitReached {
+                        Label("Free plan connects up to 3 channels. Upgrade to Pro for unlimited.", systemImage: "lock")
+                            .foregroundStyle(Color("Warning"))
+                    }
+                    Text("Pause Queue halts automated publishing for that network without deleting any scheduled posts.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DayframeColor.textSecondary)
                 }
             }
         }
@@ -35,7 +89,7 @@ struct ConnectChannelsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             if showsDoneButton {
-                PrimaryButton(title: "Continue", action: onFinished)
+                PrimaryButton(title: "Done", action: onFinished)
                     .padding(.horizontal, DayframeSpacing.xl)
                     .padding(.bottom, DayframeSpacing.lg)
             }
@@ -58,64 +112,125 @@ struct ConnectChannelsView: View {
         channels = (try? await environment.channelRepository.loadChannels()) ?? []
     }
 
-    private func row(platform: Platform) -> some View {
+    private func channelRow(platform: Platform) -> some View {
         let channel = channels.first { $0.platform == platform }
         let isConnecting = connectingPlatform == platform
-        return HStack(spacing: DayframeSpacing.md) {
-            ChannelAvatar(platform: platform, size: 44, showsBadge: false)
-            VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
-                Text(platform.displayName)
-                    .font(DayframeFont.headline)
-                    .foregroundStyle(DayframeColor.textPrimary)
-                if let channel {
-                    Text(channel.handle)
-                        .font(.system(size: 13))
-                        .foregroundStyle(DayframeColor.textSecondary)
+
+        return VStack(alignment: .leading, spacing: DayframeSpacing.sm) {
+            HStack(spacing: DayframeSpacing.md) {
+                ChannelAvatar(platform: platform, size: 44, showsBadge: false)
+
+                VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
+                    HStack(spacing: DayframeSpacing.xs) {
+                        Text(platform.displayName)
+                            .font(DayframeFont.headline)
+                            .foregroundStyle(DayframeColor.textPrimary)
+
+                        if let channel {
+                            ConnectionStatusBadge(health: channel.connectionHealth, compact: true)
+                        }
+                    }
+
+                    if let channel {
+                        Text(channel.handle)
+                            .font(.system(size: 13))
+                            .foregroundStyle(DayframeColor.textSecondary)
+                    } else {
+                        Text("Not connected")
+                            .font(.system(size: 12))
+                            .foregroundStyle(DayframeColor.textTertiary)
+                    }
                 }
-            }
-            Spacer()
-            if isConnecting {
-                ProgressView()
-                    .padding(.horizontal, DayframeSpacing.sm)
-            } else if let channel {
-                if channel.status == .expired {
+
+                Spacer()
+
+                if isConnecting {
+                    ProgressView()
+                        .padding(.horizontal, DayframeSpacing.sm)
+                } else if let channel {
+                    if channel.connectionHealth == .needsReauth {
+                        Button {
+                            Task { await reconnect(channel) }
+                        } label: {
+                            Text("Reconnect")
+                                .font(DayframeFont.chip)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color("Warning"))
+                                .padding(.horizontal, DayframeSpacing.md)
+                                .padding(.vertical, DayframeSpacing.xs)
+                                .background(Color("Warning").opacity(0.12))
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("Reconnect \(platform.displayName)")
+                    } else {
+                        Menu {
+                            Button(channel.isPaused ? "Resume Queue" : "Pause Queue", systemImage: channel.isPaused ? "play.circle" : "pause.circle") {
+                                Task { await togglePause(channel) }
+                            }
+                            Button("Reconnect Account", systemImage: "arrow.clockwise") {
+                                Task { await reconnect(channel) }
+                            }
+                            Divider()
+                            Button("Disconnect", systemImage: "trash", role: .destructive) {
+                                Task { await disconnect(channel) }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .font(.system(size: 20))
+                                .foregroundStyle(DayframeColor.textSecondary)
+                                .frame(width: 32, height: 32)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                } else {
                     Button {
-                        Task { await reconnect(channel) }
+                        Task { await connect(platform) }
                     } label: {
-                        Text("Reconnect")
+                        Text("Connect")
                             .font(DayframeFont.chip)
                             .fontWeight(.semibold)
-                            .foregroundStyle(Color("Warning"))
+                            .foregroundStyle(DayframeColor.primary)
                             .padding(.horizontal, DayframeSpacing.md)
                             .padding(.vertical, DayframeSpacing.xs)
-                            .background(Color("Warning").opacity(0.12))
+                            .background(DayframeColor.primary.opacity(0.12))
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.borderless)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel("Reconnect \(platform.displayName)")
-                } else {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color("Success"))
-                        .font(.system(size: 22))
-                        .accessibilityLabel("\(platform.displayName) connected")
+                    .accessibilityLabel("Connect \(platform.displayName)")
                 }
-            } else {
-                Button {
-                    Task { await connect(platform) }
-                } label: {
-                    Text("Connect")
-                        .font(DayframeFont.chip)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(DayframeColor.primary)
-                        .padding(.horizontal, DayframeSpacing.md)
-                        .padding(.vertical, DayframeSpacing.xs)
-                        .background(DayframeColor.primary.opacity(0.12))
-                        .clipShape(Capsule())
+            }
+
+            // Per-Channel "Pause Queue" toggle control when connected
+            if let channel {
+                Divider()
+                    .padding(.top, 2)
+
+                HStack {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Pause Queue")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(DayframeColor.textPrimary)
+                            Text(channel.isPaused ? "Publishing halted for this channel" : "Posts publish on schedule")
+                                .font(.system(size: 11))
+                                .foregroundStyle(channel.isPaused ? Color.orange : DayframeColor.textSecondary)
+                        }
+                    } icon: {
+                        Image(systemName: channel.isPaused ? "pause.circle.fill" : "play.circle.fill")
+                            .foregroundStyle(channel.isPaused ? Color.orange : Color("Success"))
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { channel.isPaused },
+                        set: { _ in Task { await togglePause(channel) } }
+                    ))
+                    .labelsHidden()
+                    .tint(Color.orange)
                 }
-                .buttonStyle(.borderless)
-                .contentShape(Rectangle())
-                .accessibilityLabel("Connect \(platform.displayName)")
+                .padding(.vertical, 2)
             }
         }
         .padding(.vertical, DayframeSpacing.xs)
@@ -134,7 +249,7 @@ struct ConnectChannelsView: View {
             _ = try await environment.channelRepository.connect(platform)
             connectionError = nil
         } catch AppError.oauthCancelled {
-            // User closed the provider window: no change, no error (AppFLOW 2.2).
+            // Cancelled
         } catch {
             connectionError = error.localizedDescription
         }
@@ -148,19 +263,38 @@ struct ConnectChannelsView: View {
             _ = try await environment.channelRepository.reconnect(channel)
             connectionError = nil
         } catch AppError.oauthCancelled {
-            // User closed the provider window: no change, no error (AppFLOW 2.2).
+            // Cancelled
         } catch {
             connectionError = error.localizedDescription
         }
         await load()
     }
+
+    private func togglePause(_ channel: Channel) async {
+        let newPaused = !channel.isPaused
+        do {
+            try await environment.channelRepository.togglePauseQueue(channelID: channel.id, isPaused: newPaused)
+            if let idx = channels.firstIndex(where: { $0.id == channel.id }) {
+                channels[idx].isPaused = newPaused
+            }
+        } catch {
+            connectionError = "Could not update queue pause status: \(error.localizedDescription)"
+        }
+    }
+
+    private func disconnect(_ channel: Channel) async {
+        do {
+            try await environment.channelRepository.disconnect(channel)
+            await load()
+        } catch {
+            connectionError = "Could not disconnect: \(error.localizedDescription)"
+        }
+    }
 }
 
 #Preview("ConnectChannels") {
-    ConnectChannelsView(onFinished: {})
-}
-
-#Preview("ConnectChannels dark") {
-    ConnectChannelsView(onFinished: {})
-        .environment(\.colorScheme, .dark)
+    NavigationStack {
+        ConnectChannelsView(onFinished: {})
+            .environment(AppEnvironment())
+    }
 }

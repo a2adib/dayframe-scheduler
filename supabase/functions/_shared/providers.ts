@@ -112,10 +112,10 @@ async function hmacKey(): Promise<CryptoKey> {
   );
 }
 
+/// The signed state only carries a nonce pointing at a server-side
+/// `oauth_states` row; user, platform and PKCE verifier never leave the server.
 export interface StatePayload {
-  userId: string;
-  platform: Platform;
-  codeVerifier?: string;
+  nonce: string;
   exp: number;
 }
 
@@ -155,4 +155,56 @@ export function codeVerifier(): string {
 export async function codeChallenge(verifier: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
   return b64urlEncode(new Uint8Array(digest));
+}
+
+// ── Server-side OAuth state (single use) ─────────────────────────────────────
+
+const STATE_SERVICE_HEADERS = () => ({
+  apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+  "Content-Type": "application/json",
+});
+
+export interface StoredOAuthState {
+  userId: string;
+  platform: Platform;
+  codeVerifier?: string;
+}
+
+/// Persists the flow's secrets and returns the signed state to send to the provider.
+export async function createOAuthState(stored: StoredOAuthState, ttlMs: number): Promise<string> {
+  const nonce = crypto.randomUUID();
+  const exp = Date.now() + ttlMs;
+  const response = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/oauth_states`, {
+    method: "POST",
+    headers: { ...STATE_SERVICE_HEADERS(), Prefer: "return=minimal" },
+    body: JSON.stringify({
+      id: nonce,
+      user_id: stored.userId,
+      platform: stored.platform,
+      code_verifier: stored.codeVerifier ?? null,
+      expires_at: new Date(exp).toISOString(),
+    }),
+  });
+  if (!response.ok) throw new Error(`Could not start sign-in (${response.status}).`);
+  return signState({ nonce, exp });
+}
+
+/// Verifies the signature, then deletes and returns the stored state. A second
+/// call with the same state returns null, so states are single use.
+export async function consumeOAuthState(state: string): Promise<StoredOAuthState | null> {
+  const payload = await verifyState(state);
+  if (!payload?.nonce) return null;
+  const url = new URL(`${Deno.env.get("SUPABASE_URL")}/rest/v1/oauth_states`);
+  url.searchParams.set("id", `eq.${payload.nonce}`);
+  url.searchParams.set("expires_at", `gt.${new Date().toISOString()}`);
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { ...STATE_SERVICE_HEADERS(), Prefer: "return=representation" },
+  });
+  if (!response.ok) return null;
+  const rows = await response.json() as Array<{ user_id: string; platform: Platform; code_verifier: string | null }>;
+  const row = rows[0];
+  if (!row) return null;
+  return { userId: row.user_id, platform: row.platform, codeVerifier: row.code_verifier ?? undefined };
 }

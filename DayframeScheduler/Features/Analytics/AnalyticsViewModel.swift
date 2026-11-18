@@ -1,6 +1,27 @@
 import Foundation
 import Observation
 
+struct WeekDayStreak: Identifiable {
+    let id = UUID()
+    let dayLetter: String
+    let isCompleted: Bool
+}
+
+struct ConsistencyStreakInfo {
+    var publishedThisWeek: Int
+    var weeklyGoal: Int
+    var streakWeeks: Int
+    var days: [WeekDayStreak]
+
+    var isGoalAchieved: Bool {
+        publishedThisWeek >= weeklyGoal
+    }
+
+    var progressFraction: Double {
+        min(Double(publishedThisWeek) / Double(max(weeklyGoal, 1)), 1.0)
+    }
+}
+
 @Observable
 @MainActor
 final class AnalyticsViewModel {
@@ -15,6 +36,22 @@ final class AnalyticsViewModel {
     var rangeDays = 7
     var selectedPlatform: Platform?
     var showsProPrompt = false
+
+    // Consistency streaks state
+    private(set) var streakInfo = ConsistencyStreakInfo(
+        publishedThisWeek: 4,
+        weeklyGoal: 5,
+        streakWeeks: 5,
+        days: [
+            WeekDayStreak(dayLetter: "M", isCompleted: true),
+            WeekDayStreak(dayLetter: "T", isCompleted: true),
+            WeekDayStreak(dayLetter: "W", isCompleted: true),
+            WeekDayStreak(dayLetter: "T", isCompleted: true),
+            WeekDayStreak(dayLetter: "F", isCompleted: false),
+            WeekDayStreak(dayLetter: "S", isCompleted: false),
+            WeekDayStreak(dayLetter: "S", isCompleted: false),
+        ]
+    )
 
     init(analyticsRepository: AnalyticsRepository, channelRepository: ChannelRepository) {
         self.analyticsRepository = analyticsRepository
@@ -63,12 +100,49 @@ final class AnalyticsViewModel {
         )
     }
 
+    var engagementRateText: String {
+        let reach = totals.reach
+        guard reach > 0 else { return "0.0%" }
+        let rate = (Double(totals.engagement) / Double(reach)) * 100.0
+        return String(format: "%.1f%%", rate)
+    }
+
     func load() async {
         isLoading = true
         defer { isLoading = false }
         channels = (try? await channelRepository.loadChannels()) ?? []
         dailyMetrics = (try? await analyticsRepository.loadDailyMetrics(days: rangeDays)) ?? []
-        topPosts = (try? await analyticsRepository.loadTopPosts(days: rangeDays, limit: 3)) ?? []
+        topPosts = (try? await analyticsRepository.loadTopPosts(days: rangeDays, limit: 4)) ?? []
         publishedPerChannel = (try? await analyticsRepository.loadPublishedPerChannel(days: rangeDays)) ?? []
+    }
+
+    /// Converts a TopPost back into a Post object to be pre-populated in the Composer for 1-Click Re-Queue.
+    func makeRepurposePost(from topPost: TopPost) -> Post {
+        let matchedChannel = channels.first { $0.platform == topPost.platform }
+        let target = matchedChannel.map { ch in
+            PostTarget(
+                id: UUID(),
+                channelID: ch.id,
+                bodyOverride: nil,
+                firstComment: nil,
+                status: .draft,
+                scheduledAt: nil,
+                publishedAt: nil,
+                attempts: 0,
+                errorMessage: nil
+            )
+        }
+
+        return Post(
+            id: UUID(),
+            body: topPost.body,
+            status: .draft,
+            scheduleMode: .queue,
+            scheduledAt: nil,
+            publishedAt: nil,
+            targets: target.map { [$0] } ?? [],
+            media: [],
+            firstComment: nil
+        )
     }
 }

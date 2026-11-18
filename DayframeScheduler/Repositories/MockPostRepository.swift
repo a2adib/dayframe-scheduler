@@ -46,7 +46,14 @@ final class MockPostRepository: PostRepository {
         updated.status = status
         updated.scheduleMode = status == .draft ? nil : scheduleMode
         updated.scheduledAt = scheduledAt
+        // Mirror the live repository: published/publishing targets are never reset.
+        let existing = posts.first(where: { $0.id == post.id })?.targets ?? []
+        let locked = Dictionary(
+            existing.filter { $0.status == .published || $0.status == .publishing }.map { ($0.channelID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         updated.targets = post.targets.map { target in
+            if let kept = locked[target.channelID] { return kept }
             var t = target
             t.status = status
             t.scheduledAt = scheduledAt
@@ -61,6 +68,7 @@ final class MockPostRepository: PostRepository {
         retried.status = .scheduled
         retried.scheduledAt = .now
         retried.targets = post.targets.map { target in
+            guard target.status == .failed else { return target }
             var t = target
             t.status = .scheduled
             t.scheduledAt = .now
@@ -90,6 +98,31 @@ final class MockPostRepository: PostRepository {
         updated.scheduledAt = date
         posts = posts.map { $0.id == post.id ? updated : $0 }
         return updated
+    }
+
+    func reorderQueue(posts newOrder: [Post]) async throws {
+        // Collect existing scheduled times in order
+        let existingDates = self.posts
+            .filter { $0.status != .draft && $0.scheduledAt != nil }
+            .compactMap(\.scheduledAt)
+            .sorted()
+
+        var reorderedMap: [UUID: Date] = [:]
+        for (index, post) in newOrder.enumerated() {
+            if index < existingDates.count {
+                reorderedMap[post.id] = existingDates[index]
+            }
+        }
+
+        self.posts = self.posts.map { post in
+            if let newDate = reorderedMap[post.id] {
+                var p = post
+                p.scheduledAt = newDate
+                p.targets = p.targets.map { var t = $0; t.scheduledAt = newDate; return t }
+                return p
+            }
+            return post
+        }
     }
 
     func attachMedia(_ data: Data, fileName: String, kind: MediaKind, to post: Post) async throws -> MediaAsset {

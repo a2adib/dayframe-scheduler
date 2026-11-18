@@ -5,4 +5,5 @@ protocol ChannelRepository {
     func connect(_ platform: Platform) async throws -> Channel
     func reconnect(_ channel: Channel) async throws -> Channel
     func disconnect(_ channel: Channel) async throws
+    func togglePauseQueue(channelID: UUID, isPaused: Bool) async throws
 }
