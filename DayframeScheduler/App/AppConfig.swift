@@ -38,17 +38,20 @@ enum AppConfig {
     }
 
     /// Default Cloud project settings.
-    /// When you create your free Supabase Cloud project at https://supabase.com,
-    /// replace these values with your Project URL and Anon/Publishable Key.
-    static let defaultSupabaseURL = URL(string: "http://127.0.0.1:54321")!
-    static let defaultSupabaseAnonKey = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
+    /// Configured for your 24/7 Supabase Cloud project.
+    static let defaultSupabaseURL = URL(string: "https://gllzmbwndzvaoonyerov.supabase.co")!
+    static let defaultSupabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsbHptYnduZHp2YW9vbnllcm92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NjYzMjUsImV4cCI6MjExMDI0MjMyNX0.BKAySseZ-CC4nbbTfIL-yWKnW_s8skFWWOyJXCOjdVo"
 
     /// Default backend mode for standalone app runs on device.
-    /// Defaults to `.live` so the app connects to the real backend even when launched
-    /// from the iPhone home screen untethered from Xcode.
+    /// Defaults to `.live` so real Supabase Cloud data, live OAuth channels,
+    /// real posts, and live scheduling are used.
     static var defaultBackendMode: AppEnvironment.BackendMode {
         if let envMode = ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"],
            let mode = AppEnvironment.BackendMode(rawValue: envMode) {
+            return mode
+        }
+        if let savedMode = UserDefaults.standard.string(forKey: "dayframe_backend_mode"),
+           let mode = AppEnvironment.BackendMode(rawValue: savedMode) {
             return mode
         }
         return .live

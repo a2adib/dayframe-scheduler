@@ -23,7 +23,9 @@ struct AuthFlowView: View {
             case .auth:
                 AuthView(onAuthenticated: { route = .postAuth })
             case .connectChannels:
-                ConnectChannelsView(onFinished: { onAuthenticated() })
+                NavigationStack {
+                    ConnectChannelsView(onFinished: { onAuthenticated() })
+                }
             case .postAuth:
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

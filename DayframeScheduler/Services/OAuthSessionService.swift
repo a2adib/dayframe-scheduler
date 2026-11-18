@@ -15,14 +15,28 @@ final class OAuthSessionService: NSObject, ASWebAuthenticationPresentationContex
     private static let cancelledCode = 1 // ASWebAuthenticationError.canceledLogin
     private static let errorDomain = "com.apple.AuthenticationServices.WebAuthenticationSession"
 
+    private static var activeServices: [OAuthSessionService] = []
+
     private let anchor: ASPresentationAnchor
     private var session: ASWebAuthenticationSession?
 
     @MainActor
+    static func currentWindow() -> UIWindow {
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            if let keyWindow = windowScene.windows.first(where: { $0.isKeyWindow }) {
+                return keyWindow
+            }
+            if let window = windowScene.windows.first {
+                return window
+            }
+        }
+        return ASPresentationAnchor()
+    }
+
+    @MainActor
     static func make() -> OAuthSessionService {
-        let anchor = UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
-            .first ?? ASPresentationAnchor()
+        let anchor = currentWindow()
         return OAuthSessionService(anchor: anchor)
     }
 
@@ -32,8 +46,15 @@ final class OAuthSessionService: NSObject, ASWebAuthenticationPresentationContex
 
     @MainActor
     func run(authorizeURL: URL) async throws -> Callback {
-        try await withCheckedThrowingContinuation { continuation in
-            let session = ASWebAuthenticationSession(url: authorizeURL, callbackURLScheme: "dayframe") { [weak self] callbackURL, error in
+        Self.activeServices.append(self)
+        return try await withCheckedThrowingContinuation { continuation in
+            let session = ASWebAuthenticationSession(url: authorizeURL, callbackURLScheme: "dayframe") { [self] callbackURL, error in
+                defer {
+                    Task { @MainActor in
+                        Self.activeServices.removeAll { $0 === self }
+                        self.session = nil
+                    }
+                }
                 if let error {
                     let nsError = error as NSError
                     if nsError.domain == Self.errorDomain && nsError.code == Self.cancelledCode {
@@ -55,7 +76,6 @@ final class OAuthSessionService: NSObject, ASWebAuthenticationPresentationContex
                 let status = components.queryItems?.first(where: { $0.name == "status" })?.value ?? "error"
                 let message = components.queryItems?.first(where: { $0.name == "message" })?.value
                 continuation.resume(returning: Callback(platform: platform, status: status, message: message))
-                self?.session = nil
             }
             session.presentationContextProvider = self
             self.session = session
@@ -64,6 +84,16 @@ final class OAuthSessionService: NSObject, ASWebAuthenticationPresentationContex
     }
 
     nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        anchor
+        if Thread.isMainThread {
+            return MainActor.assumeIsolated {
+                Self.currentWindow()
+            }
+        } else {
+            return DispatchQueue.main.sync {
+                MainActor.assumeIsolated {
+                    Self.currentWindow()
+                }
+            }
+        }
     }
 }

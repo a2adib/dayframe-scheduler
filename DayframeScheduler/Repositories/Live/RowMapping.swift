@@ -20,6 +20,7 @@ struct ChannelRow: Codable {
     var handle: String?
     var displayName: String?
     var status: String
+    var isPaused: Bool?
     var tokenExpiresAt: Date?
 }
 
@@ -32,6 +33,7 @@ struct PostRow: Codable {
     var scheduledAt: Date?
     var publishedAt: Date?
     var idempotencyKey: String?
+    var firstComment: String?
 }
 
 struct PostTargetRow: Codable {
@@ -40,8 +42,13 @@ struct PostTargetRow: Codable {
     var userId: UUID
     var channelId: UUID
     var bodyOverride: String?
+    var firstComment: String?
     var status: String
     var scheduledAt: Date?
+    var externalPostId: String?
+    var attempts: Int?
+    var errorMessage: String?
+    var publishedAt: Date?
 }
 
 struct MediaAssetRow: Codable {
@@ -76,6 +83,36 @@ struct MetricsDailyRow: Codable {
     var clicks: Int?
 }
 
+struct IdeaRow: Codable {
+    var id: UUID
+    var userId: UUID
+    var title: String
+    var notes: String
+    var stage: String
+    var tags: [String]
+    var link: String?
+    var mediaUrls: [String]?
+    var createdAt: Date
+    var updatedAt: Date
+}
+
+struct EngagementItemRow: Codable {
+    var id: UUID
+    var userId: UUID
+    var channelId: UUID
+    var postId: UUID?
+    var authorName: String
+    var authorHandle: String?
+    var authorAvatarUrl: String?
+    var content: String
+    var platform: String
+    var isReplied: Bool
+    var isStarred: Bool
+    var replyText: String?
+    var repliedAt: Date?
+    var createdAt: Date
+}
+
 enum RowMapping {
     static func platform(_ raw: String) -> Platform {
         Platform(rawValue: raw) ?? .x
@@ -95,6 +132,16 @@ enum RowMapping {
 
     static func plan(_ raw: String) -> PlanTier {
         PlanTier(rawValue: raw) ?? .free
+    }
+
+    static func ideaStage(_ raw: String) -> IdeaStage {
+        switch raw.lowercased() {
+        case "raw", "raw ideas": return .raw
+        case "drafting": return .drafting
+        case "ready", "ready to schedule": return .ready
+        case "converted": return .converted
+        default: return .raw
+        }
     }
 
     /// `posting_slots.local_time` arrives as "HH:MM:SS".

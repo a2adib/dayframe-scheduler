@@ -6,6 +6,17 @@ import Supabase
 /// End-to-end Phase 4 verification against the local Supabase stack
 /// (`supabase start` must be running): sign up a fresh user, then create,
 /// schedule, load, reschedule, and delete posts through the Live repositories.
+///
+/// These tests create real users, so they only run when `SUPABASE_URL` points
+/// at a local stack. They never run against the production Cloud project.
+enum LocalSupabase {
+    static var isConfigured: Bool {
+        guard let raw = ProcessInfo.processInfo.environment["SUPABASE_URL"],
+              let host = URL(string: raw)?.host else { return false }
+        return ["localhost", "127.0.0.1", "::1"].contains(host) || host.hasSuffix(".local")
+    }
+}
+
 @MainActor
 struct LiveDataLayerTests {
     private func makeStack() async throws -> (AppEnvironment, AuthUser) {
@@ -15,7 +26,7 @@ struct LiveDataLayerTests {
         return (environment, user)
     }
 
-    @Test
+    @Test(.enabled(if: LocalSupabase.isConfigured, "Requires SUPABASE_URL pointing at a local Supabase stack"))
     func signUpCreateScheduleRescheduleDelete() async throws {
         let (environment, user) = try await makeStack()
         #expect(user.email.hasSuffix("@dayframe.test"))
@@ -64,7 +75,7 @@ struct LiveDataLayerTests {
         #expect(queue.isEmpty)
     }
 
-    @Test
+    @Test(.enabled(if: LocalSupabase.isConfigured, "Requires SUPABASE_URL pointing at a local Supabase stack"))
     func mediaUploadEndToEnd() async throws {
         let (environment, _) = try await makeStack()
         let scheduledAt = Calendar.current.date(byAdding: .hour, value: 3, to: .now)!

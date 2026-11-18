@@ -1,11 +1,11 @@
 -- ==============================================================================
 -- 24/7 Scheduling Engine Setup: Supabase Vault Configuration
 -- ==============================================================================
--- Run this once in your Supabase Cloud Dashboard -> SQL Editor.
--- Replace <YOUR_PROJECT_REF> with your actual project reference (e.g. abcdefghijkl)
--- and <YOUR_SERVICE_ROLE_KEY> with your service_role key (from Project Settings -> API).
+-- Run this once in your Supabase Cloud Dashboard -> SQL Editor
+-- (https://supabase.com/dashboard/project/gllzmbwndzvaoonyerov/sql/new)
 
-select vault.create_secret('https://<YOUR_PROJECT_REF>.supabase.co', 'functions_base_url');
+select vault.create_secret('https://gllzmbwndzvaoonyerov.supabase.co', 'functions_base_url');
+-- Paste your service_role key from Dashboard -> Project Settings -> API. Never commit it.
 select vault.create_secret('<YOUR_SERVICE_ROLE_KEY>', 'service_role_key');
 
 -- Verification query: Verify both secrets are stored in Vault

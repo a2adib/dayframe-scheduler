@@ -10,6 +10,8 @@ struct LiveScheduleRepository: ScheduleRepository {
             .from("posting_slots")
             .select()
             .eq("user_id", value: session.user.id)
+            .order("weekday", ascending: true)
+            .order("local_time", ascending: true)
             .execute()
             .value
         return rows.map { row in
@@ -27,6 +29,52 @@ struct LiveScheduleRepository: ScheduleRepository {
         try await client
             .from("posting_slots")
             .update(["active": isActive])
+            .eq("id", value: slot.id)
+            .execute()
+    }
+
+    func addSlot(weekday: Int, minutesFromMidnight: Int, channelID: UUID?) async throws -> PostingSlot {
+        let session = try await client.auth.session
+        let hour = (minutesFromMidnight / 60) % 24
+        let minute = minutesFromMidnight % 60
+        let timeStr = String(format: "%02d:%02d:00", hour, minute)
+
+        struct InsertSlotRow: Codable {
+            var userId: UUID
+            var weekday: Int
+            var localTime: String
+            var channelId: UUID?
+            var active: Bool
+        }
+
+        let payload = InsertSlotRow(
+            userId: session.user.id,
+            weekday: weekday,
+            localTime: timeStr,
+            channelId: channelID,
+            active: true
+        )
+
+        let inserted: PostingSlotRow = try await client
+            .from("posting_slots")
+            .insert(payload, returning: .representation)
+            .single()
+            .execute()
+            .value
+
+        return PostingSlot(
+            id: inserted.id,
+            weekday: inserted.weekday,
+            minutesFromMidnight: minutesFromMidnight,
+            channelID: inserted.channelId,
+            isActive: inserted.active
+        )
+    }
+
+    func deleteSlot(_ slot: PostingSlot) async throws {
+        try await client
+            .from("posting_slots")
+            .delete()
             .eq("id", value: slot.id)
             .execute()
     }

@@ -6,9 +6,12 @@ protocol PostRepository {
     func loadPosts(on date: Date) async throws -> [Post]
     func loadDrafts() async throws -> [Post]
     func save(_ post: Post, as status: PostStatus, scheduleMode: ScheduleMode?, scheduledAt: Date?) async throws -> Post
+    func update(_ post: Post, as status: PostStatus, scheduleMode: ScheduleMode?, scheduledAt: Date?) async throws -> Post
+    func retry(_ post: Post) async throws -> Post
     func duplicate(_ post: Post) async throws -> Post
     func delete(_ post: Post) async throws
     func reschedule(_ post: Post, to date: Date) async throws -> Post
+    func reorderQueue(posts: [Post]) async throws
     /// Uploads media bytes and attaches them to the post (schema `media_assets`).
     func attachMedia(_ data: Data, fileName: String, kind: MediaKind, to post: Post) async throws -> MediaAsset
 }

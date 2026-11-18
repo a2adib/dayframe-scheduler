@@ -2,7 +2,7 @@
 // the signed state, exchange the code, resolve the account identity, store the
 // token in Vault, upsert the channel, then bounce to the dayframe:// scheme so
 // ASWebAuthenticationSession finishes.
-import { APP_REDIRECT_SCHEME, callbackUrl, providerConfig, verifyState, type Platform } from "../_shared/providers.ts";
+import { APP_REDIRECT_SCHEME, callbackUrl, consumeOAuthState, providerConfig, type Platform } from "../_shared/providers.ts";
 
 const SERVICE_HEADERS = {
   apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -41,10 +41,11 @@ async function exchangeCode(platform: Platform, code: string, redirectUri: strin
   const headers: Record<string, string> = { "Content-Type": "application/x-www-form-urlencoded" };
   if (platform === "x") {
     headers["Authorization"] = "Basic " + btoa(`${config.clientId}:${config.clientSecret}`);
-    if (verifier) body.set("code_verifier", verifier);
   } else {
     body.set("client_secret", config.clientSecret!);
   }
+  // Any provider started with PKCE (X, LinkedIn) must get the verifier back.
+  if (verifier) body.set("code_verifier", verifier);
   const response = await fetch(config.tokenUrl, { method: "POST", headers, body });
   const data = await response.json();
   if (!response.ok) {
@@ -170,7 +171,8 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const state = url.searchParams.get("state");
   const code = url.searchParams.get("code");
-  const payload = state ? await verifyState(state) : null;
+  // Single use: the stored state is deleted as it is read.
+  const payload = state ? await consumeOAuthState(state) : null;
   if (!payload) return redirect("instagram", "error", "The sign-in link expired. Try connecting again.");
   const platform = payload.platform;
 

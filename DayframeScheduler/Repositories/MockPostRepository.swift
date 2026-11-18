@@ -9,7 +9,7 @@ final class MockPostRepository: PostRepository {
 
     func loadQueue() async throws -> [Post] {
         posts
-            .filter { $0.status == .scheduled && $0.scheduledAt != nil }
+            .filter { $0.status != .draft && $0.scheduledAt != nil }
             .sorted { ($0.scheduledAt ?? .distantPast) < ($1.scheduledAt ?? .distantPast) }
     }
 
@@ -41,6 +41,45 @@ final class MockPostRepository: PostRepository {
         return stored
     }
 
+    func update(_ post: Post, as status: PostStatus, scheduleMode: ScheduleMode?, scheduledAt: Date?) async throws -> Post {
+        var updated = post
+        updated.status = status
+        updated.scheduleMode = status == .draft ? nil : scheduleMode
+        updated.scheduledAt = scheduledAt
+        // Mirror the live repository: published/publishing targets are never reset.
+        let existing = posts.first(where: { $0.id == post.id })?.targets ?? []
+        let locked = Dictionary(
+            existing.filter { $0.status == .published || $0.status == .publishing }.map { ($0.channelID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        updated.targets = post.targets.map { target in
+            if let kept = locked[target.channelID] { return kept }
+            var t = target
+            t.status = status
+            t.scheduledAt = scheduledAt
+            return t
+        }
+        posts = posts.map { $0.id == post.id ? updated : $0 }
+        return updated
+    }
+
+    func retry(_ post: Post) async throws -> Post {
+        var retried = post
+        retried.status = .scheduled
+        retried.scheduledAt = .now
+        retried.targets = post.targets.map { target in
+            guard target.status == .failed else { return target }
+            var t = target
+            t.status = .scheduled
+            t.scheduledAt = .now
+            t.attempts = 0
+            t.errorMessage = nil
+            return t
+        }
+        posts = posts.map { $0.id == post.id ? retried : $0 }
+        return retried
+    }
+
     func duplicate(_ post: Post) async throws -> Post {
         var copy = post
         copy.id = UUID()
@@ -59,6 +98,31 @@ final class MockPostRepository: PostRepository {
         updated.scheduledAt = date
         posts = posts.map { $0.id == post.id ? updated : $0 }
         return updated
+    }
+
+    func reorderQueue(posts newOrder: [Post]) async throws {
+        // Collect existing scheduled times in order
+        let existingDates = self.posts
+            .filter { $0.status != .draft && $0.scheduledAt != nil }
+            .compactMap(\.scheduledAt)
+            .sorted()
+
+        var reorderedMap: [UUID: Date] = [:]
+        for (index, post) in newOrder.enumerated() {
+            if index < existingDates.count {
+                reorderedMap[post.id] = existingDates[index]
+            }
+        }
+
+        self.posts = self.posts.map { post in
+            if let newDate = reorderedMap[post.id] {
+                var p = post
+                p.scheduledAt = newDate
+                p.targets = p.targets.map { var t = $0; t.scheduledAt = newDate; return t }
+                return p
+            }
+            return post
+        }
     }
 
     func attachMedia(_ data: Data, fileName: String, kind: MediaKind, to post: Post) async throws -> MediaAsset {

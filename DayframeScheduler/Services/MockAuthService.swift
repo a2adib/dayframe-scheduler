@@ -2,7 +2,7 @@ import Foundation
 
 /// Mock auth for the mock backend mode: any sign-in succeeds instantly.
 final class MockAuthService: AuthService {
-    var currentUser: AuthUser?
+    var currentUser: AuthUser? = AuthUser(id: MockData.profile.id, email: "adib@dayframe.app")
 
     func signUp(email: String, password: String) async throws -> AuthUser {
         let user = AuthUser(id: UUID(), email: email)

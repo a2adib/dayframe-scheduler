@@ -38,4 +38,15 @@ final class MockChannelRepository: ChannelRepository {
     func disconnect(_ channel: Channel) async throws {
         channels.removeAll { $0.id == channel.id }
     }
+
+    func togglePauseQueue(channelID: UUID, isPaused: Bool) async throws {
+        channels = channels.map { channel in
+            if channel.id == channelID {
+                var c = channel
+                c.isPaused = isPaused
+                return c
+            }
+            return channel
+        }
+    }
 }

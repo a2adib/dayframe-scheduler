@@ -25,9 +25,18 @@ struct LiveChannelRepository: ChannelRepository {
                 handle: row.handle ?? "",
                 displayName: row.displayName ?? "",
                 status: RowMapping.channelStatus(row.status),
+                isPaused: row.isPaused ?? false,
                 tokenExpiresAt: row.tokenExpiresAt
             )
         }
+    }
+
+    func togglePauseQueue(channelID: UUID, isPaused: Bool) async throws {
+        try await client
+            .from("channels")
+            .update(["is_paused": isPaused])
+            .eq("id", value: channelID)
+            .execute()
     }
 
     /// Runs the full OAuth flow: oauth-start returns the provider authorize

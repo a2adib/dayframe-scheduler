@@ -16,6 +16,7 @@ interface ClaimedTarget {
   platform: Platform;
   body: string;
   body_override: string | null;
+  first_comment: string | null;
   attempts: number;
   media: { path: string; kind: "image" | "video" }[];
 }
@@ -225,6 +226,63 @@ async function externalAccountId(channelId: string): Promise<string> {
 
 // ── Result handling ──────────────────────────────────────────────────────────
 
+async function publishFirstComment(target: ClaimedTarget, token: string, externalId: string): Promise<void> {
+  if (!target.first_comment || !target.first_comment.trim()) return;
+  const comment = target.first_comment.trim();
+
+  try {
+    switch (target.platform) {
+      case "instagram": {
+        const base = providerConfig("instagram").apiBase;
+        await fetch(`${base}/v23.0/${externalId}/comments`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: comment }),
+        });
+        break;
+      }
+      case "linkedin": {
+        const base = providerConfig("linkedin").apiBase;
+        const memberUrn = await externalAccountId(target.channel_id);
+        await fetch(`${base}/rest/socialActions/${encodeURIComponent(externalId)}/comments`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "LinkedIn-Version": "202401",
+            "Content-Type": "application/json",
+            "X-Restli-Protocol-Version": "2.0.0",
+          },
+          body: JSON.stringify({
+            actor: `urn:li:person:${memberUrn}`,
+            message: { text: comment },
+          }),
+        });
+        break;
+      }
+      case "facebook": {
+        const base = providerConfig("facebook").apiBase;
+        await fetch(`${base}/v21.0/${externalId}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: comment, access_token: token }),
+        });
+        break;
+      }
+      case "x": {
+        const base = providerConfig("x").apiBase;
+        await fetch(`${base}/2/tweets`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ text: comment.slice(0, 280), reply: { in_reply_to_tweet_id: externalId } }),
+        });
+        break;
+      }
+    }
+  } catch (error) {
+    console.warn(`[publish-due] First comment publication failed: ${error}`);
+  }
+}
+
 function isPermanent(status: number): boolean {
   return status === 400 || status === 403 || status === 404 || status === 422;
 }
@@ -317,6 +375,7 @@ Deno.serve(async (req) => {
           break;
       }
       await markPublished(target, externalId);
+      await publishFirstComment(target, bundle.accessToken, externalId);
       published++;
     } catch (error) {
       const status = error instanceof PublishError ? error.status : 500;

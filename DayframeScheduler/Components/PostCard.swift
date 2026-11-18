@@ -9,6 +9,7 @@ struct PostCard: View {
     var status: PostStatus
     var bodyText: String
     var mediaCaption: String?
+    var hasFirstComment: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: DayframeSpacing.md) {
@@ -18,6 +19,18 @@ struct PostCard: View {
                     .font(DayframeFont.chip)
                     .foregroundStyle(DayframeColor.textSecondary)
                 Spacer()
+                if hasFirstComment {
+                    HStack(spacing: 3) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                        Text("1st")
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(DayframeColor.primary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(DayframeColor.primary.opacity(0.12))
+                    .clipShape(Capsule())
+                }
                 StatusChip(status: status, size: .compact)
             }
 

@@ -35,6 +35,7 @@ struct DayframeSchedulerApp: App {
                 }
             }
             .environment(environment)
+            .preferredColorScheme(environment.preferredColorScheme)
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: authChecked)
         }
     }

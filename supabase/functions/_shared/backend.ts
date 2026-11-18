@@ -57,15 +57,6 @@ export async function loadToken(channelId: string): Promise<TokenBundle | null> 
   };
 }
 
-async function tokenEndpoint(platform: Platform): Promise<string> {
-  const base = providerConfig(platform).apiBase;
-  return platform === "x"
-    ? `${base}/2/oauth2/token`
-    : platform === "linkedin"
-    ? `${base}/oauth/v2/accessToken`
-    : `${base}/access_token`;
-}
-
 export async function refreshToken(
   platform: Platform,
   refresh: string,
@@ -80,10 +71,24 @@ export async function refreshToken(
     body.set("client_id", config.clientId!);
     body.set("client_secret", config.clientSecret!);
   }
-  const response = await fetch(tokenEndpoint(platform), { method: "POST", headers, body });
+  const response = await fetch(config.tokenUrl, { method: "POST", headers, body });
   const data = await response.json();
   if (!response.ok) throw new Error(`Token refresh failed: ${data.error ?? response.status}`);
   return { accessToken: data.access_token, refreshToken: data.refresh_token ?? refresh, expiresIn: data.expires_in ?? 3600 };
+}
+
+/// Instagram long-lived tokens have no refresh token: they are extended by
+/// exchanging the current (still valid) access token.
+async function refreshInstagramToken(
+  accessToken: string,
+): Promise<{ accessToken: string; refreshToken: string | null; expiresIn: number }> {
+  const url = new URL(`${providerConfig("instagram").apiBase}/refresh_access_token`);
+  url.searchParams.set("grant_type", "ig_refresh_token");
+  url.searchParams.set("access_token", accessToken);
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok) throw new Error(`Instagram token refresh failed: ${data.error?.message ?? response.status}`);
+  return { accessToken: data.access_token, refreshToken: null, expiresIn: data.expires_in ?? 60 * 86_400 };
 }
 
 async function saveRefreshedToken(
@@ -116,15 +121,18 @@ export async function ensureFreshToken(
   if (!bundle) return null;
   const refreshWindowMs = platform === "x" ? 30 * 60 * 1000 : 7 * 86_400 * 1000;
   if (bundle.expiresAt - Date.now() > refreshWindowMs) return bundle;
-  if (!bundle.refreshToken) return bundle;
+  if (platform !== "instagram" && !bundle.refreshToken) return bundle;
   try {
-    const refreshed = await refreshToken(platform, bundle.refreshToken);
+    const refreshed = platform === "instagram"
+      ? await refreshInstagramToken(bundle.accessToken)
+      : await refreshToken(platform, bundle.refreshToken!);
     bundle.accessToken = refreshed.accessToken;
     bundle.refreshToken = refreshed.refreshToken;
     bundle.expiresAt = Date.now() + refreshed.expiresIn * 1000;
     bundle.secretId = await saveRefreshedToken(channelId, refreshed);
-  } catch {
+  } catch (error) {
     // The caller surfaces the auth error from the actual API call.
+    console.error(`Token refresh failed for channel ${channelId}:`, error);
   }
   return bundle;
 }

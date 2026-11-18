@@ -33,13 +33,12 @@ struct LiveAuthService: AuthService {
     func signInWithOAuth(provider: OAuthProvider) async throws -> AuthUser {
         do {
             let session = try await client.auth.signInWithOAuth(
-                provider: Provider(rawValue: provider.rawValue) ?? .apple
+                provider: Provider(rawValue: provider.rawValue) ?? .google,
+                redirectTo: URL(string: "dayframe://auth-callback")
             )
             return AuthUser(id: session.user.id, email: session.user.email ?? "")
         } catch {
-            throw AuthError.oauthUnavailable(
-                "\(provider.rawValue.capitalized) sign-in isn't configured yet. Use email for now."
-            )
+            throw AuthError.oauthUnavailable(error.localizedDescription)
         }
     }
 
