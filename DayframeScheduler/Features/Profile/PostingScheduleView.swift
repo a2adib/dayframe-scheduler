@@ -87,6 +87,17 @@ struct PostingScheduleView: View {
         .sheet(isPresented: $showingAddSlot) {
             addSlotSheet
         }
+        .alert(
+            "Schedule update failed",
+            isPresented: Binding(
+                get: { model.errorMessage != nil },
+                set: { if !$0 { model.errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.errorMessage ?? "")
+        }
     }
 
     private func channelLabel(for slot: PostingSlot) -> String {
