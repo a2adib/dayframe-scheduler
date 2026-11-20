@@ -191,6 +191,14 @@ struct ConnectChannelsView: View {
                         }
                         .buttonStyle(.borderless)
                     }
+                } else if platform == .threads || platform == .tiktok {
+                    Text("Coming Soon")
+                        .font(DayframeFont.chip)
+                        .foregroundStyle(DayframeColor.textTertiary)
+                        .padding(.horizontal, DayframeSpacing.md)
+                        .padding(.vertical, DayframeSpacing.xs)
+                        .background(DayframeColor.surface)
+                        .clipShape(Capsule())
                 } else {
                     Button {
                         Task { await connect(platform) }
