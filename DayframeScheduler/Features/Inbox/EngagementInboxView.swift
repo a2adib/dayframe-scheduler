@@ -8,6 +8,9 @@ import SwiftUI
 struct EngagementInboxView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: EngagementInboxViewModel?
+    /// On iPhone there is no side detail pane, so a tapped conversation opens
+    /// in a sheet with the full thread and reply field.
+    @State private var showsMobileDetail = false
 
     var body: some View {
         Group {
@@ -34,13 +37,52 @@ struct EngagementInboxView: View {
     }
 
     private func inboxContent(model: EngagementInboxViewModel) -> some View {
+        inboxLayout(model: model)
+            .sheet(isPresented: $showsMobileDetail) {
+                NavigationStack {
+                    Group {
+                        if let selected = model.selectedItem {
+                            detailPane(item: selected, model: model)
+                        } else {
+                            selectPromptView
+                        }
+                    }
+                    .navigationTitle("Conversation")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { showsMobileDetail = false }
+                        }
+                    }
+                }
+                .presentationDetents([.large])
+            }
+    }
+
+    private func inboxLayout(model: EngagementInboxViewModel) -> some View {
         VStack(spacing: 0) {
             // Triage Filter Bar
             filterBar(model: model)
 
             Divider()
 
-            if model.filteredItems.isEmpty {
+            if let error = model.errorMessage {
+                HStack {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color("Danger"))
+                    Spacer()
+                    Button("Retry") {
+                        Task { await model.load() }
+                    }
+                    .font(DayframeFont.chip)
+                    .foregroundStyle(DayframeColor.primary)
+                }
+                .padding(.horizontal, DayframeSpacing.lg)
+                .padding(.vertical, DayframeSpacing.sm)
+            }
+
+            if model.filteredItems.isEmpty && model.errorMessage == nil {
                 emptyInboxView(model: model)
             } else {
                 // Two-Pane Responsive Layout (NavigationSplitView or Stack with selection)
@@ -203,7 +245,7 @@ struct EngagementInboxView: View {
                             PlatformBadge(platform: item.platform, size: 14)
                         }
 
-                        Text(item.postSnippet ?? "Scheduled post: 'Framing your day before opening your feeds changes everything...'")
+                        Text(item.postSnippet ?? "The original post isn't available.")
                             .font(.system(size: 13))
                             .foregroundStyle(DayframeColor.textPrimary)
                             .lineLimit(3)
@@ -409,7 +451,11 @@ struct EngagementInboxView: View {
                 HStack(spacing: 6) {
                     ForEach(model.suggestedReplies(for: item).prefix(2), id: \.self) { chip in
                         Button {
-                            Task { await model.sendReply(to: item, text: chip) }
+                            // Prefill the reply for review instead of sending a canned
+                            // message on a single tap.
+                            model.selectItem(item)
+                            model.replyText = chip
+                            showsMobileDetail = true
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "sparkles")
@@ -435,6 +481,12 @@ struct EngagementInboxView: View {
             RoundedRectangle(cornerRadius: DayframeRadius.card, style: .continuous)
                 .strokeBorder(DayframeColor.border, lineWidth: 1)
         )
+        .contentShape(RoundedRectangle(cornerRadius: DayframeRadius.card, style: .continuous))
+        .onTapGesture {
+            model.selectItem(item)
+            showsMobileDetail = true
+        }
+        .accessibilityAddTraits(.isButton)
     }
 
     private var selectPromptView: some View {

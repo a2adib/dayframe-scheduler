@@ -11,9 +11,6 @@ struct AIWritingToolbar: View {
     var onApplyText: (String, Bool) -> Void // (text, isReplacement)
     var onOpenFullAssistant: () -> Void
 
-    @State private var isProcessing = false
-    @State private var activeAction: String?
-
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: DayframeSpacing.sm) {

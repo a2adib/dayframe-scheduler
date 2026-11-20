@@ -372,4 +372,68 @@ struct NewFeaturesTests {
             #expect(repurposed.body.contains(topPost.body))
         }
     }
+
+    @Test
+    func queueCanReorderAndAnalyticsFilter() async throws {
+        let futurePost = Post(
+            id: UUID(), body: "Future", status: .scheduled,
+            scheduleMode: .queue, scheduledAt: .now.addingTimeInterval(3600),
+            publishedAt: nil, targets: [], media: []
+        )
+        let draftPost = Post(
+            id: UUID(), body: "Draft", status: .draft,
+            scheduleMode: nil, scheduledAt: nil,
+            publishedAt: nil, targets: [], media: []
+        )
+        let publishedPost = Post(
+            id: UUID(), body: "Published", status: .published,
+            scheduleMode: .queue, scheduledAt: .now.addingTimeInterval(-3600),
+            publishedAt: .now.addingTimeInterval(-3600), targets: [], media: []
+        )
+
+        let queueVM = QueueViewModel(
+            channelRepository: MockChannelRepository(),
+            postRepository: MockPostRepository(posts: [futurePost, draftPost, publishedPost])
+        )
+        await queueVM.load()
+        #expect(queueVM.canReorder(futurePost) == true)
+        #expect(queueVM.canReorder(draftPost) == false)
+        #expect(queueVM.canReorder(publishedPost) == false)
+
+        let analyticsVM = AnalyticsViewModel(
+            analyticsRepository: MockAnalyticsRepository(),
+            channelRepository: MockChannelRepository(),
+            postRepository: MockPostRepository(posts: [publishedPost])
+        )
+        await analyticsVM.load()
+        analyticsVM.selectedPlatform = .x
+        #expect(analyticsVM.postsPerChannel.allSatisfy { $0.platform == .x })
+    }
+
+    @Test
+    func composerTemplatePostPreservesOverrides() async throws {
+        let channelRepo = MockChannelRepository()
+        let channels = try await channelRepo.loadChannels()
+        let xChannel = try #require(channels.first(where: { $0.platform == .x }))
+        let target = PostTarget(
+            id: UUID(), channelID: xChannel.id,
+            bodyOverride: "Custom X override", firstComment: nil,
+            status: .published, scheduledAt: nil, publishedAt: .now,
+            attempts: 1, errorMessage: nil
+        )
+        let template = Post(
+            id: UUID(), body: "Original post", status: .published,
+            scheduleMode: .queue, scheduledAt: .now, publishedAt: .now,
+            targets: [target], media: []
+        )
+
+        let composer = ComposerViewModel(
+            channelRepository: channelRepo,
+            postRepository: MockPostRepository(),
+            scheduleRepository: MockScheduleRepository(),
+            templatePost: template
+        )
+        await composer.load()
+        #expect(composer.bodyFor(platform: .x) == "Custom X override")
+    }
 }

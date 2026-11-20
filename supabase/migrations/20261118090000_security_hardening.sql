@@ -66,3 +66,15 @@ alter table oauth_states enable row level security;
 -- No policies: only the service role (Edge Functions) can read or write.
 revoke all on oauth_states from authenticated, anon;
 create index if not exists oauth_states_expires_idx on oauth_states(expires_at);
+
+-- 4. Lets the delete-account Edge Function remove a user's Vault secrets.
+create or replace function public.delete_token_secret(p_secret_id uuid)
+returns void
+language sql
+security definer
+set search_path = public, vault
+as $$
+  delete from vault.secrets where id = p_secret_id;
+$$;
+revoke all on function public.delete_token_secret(uuid) from public, anon, authenticated;
+grant execute on function public.delete_token_secret(uuid) to service_role;

@@ -8,11 +8,21 @@ struct CalendarView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: CalendarViewModel?
     @State private var monthAnchor = Date.now
+    @State private var weekAnchor = Date.now
     @State private var showsDayList = false
     @State private var selectedPost: Post?
     @State private var postToReschedule: Post?
     @State private var rescheduleTargetDate = Date.now
     @State private var showsComposer = false
+    /// SwiftUI can't present a second sheet while the day list is still up,
+    /// so actions from the day list run after it finishes dismissing.
+    @State private var pendingDayListAction: DayListAction?
+
+    private enum DayListAction {
+        case open(Post)
+        case reschedule(Post)
+        case compose
+    }
 
     var body: some View {
         Group {
@@ -25,6 +35,9 @@ struct CalendarView: View {
         }
         .background(DayframeColor.background)
         .navigationTitle("Calendar")
+        .onChange(of: environment.postsVersion) {
+            Task { await model?.load() }
+        }
         .task {
             if model == nil {
                 let viewModel = CalendarViewModel(
@@ -39,6 +52,21 @@ struct CalendarView: View {
 
     private func calendar(model: CalendarViewModel) -> some View {
         VStack(spacing: DayframeSpacing.md) {
+            if let error = model.errorMessage {
+                HStack {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color("Danger"))
+                    Spacer()
+                    Button("Retry") {
+                        Task { await model.load() }
+                    }
+                    .font(DayframeFont.chip)
+                    .foregroundStyle(DayframeColor.primary)
+                }
+                .padding(.horizontal, DayframeSpacing.lg)
+            }
+
             // View Mode Toggle (Month vs Week)
             HStack {
                 Picker("View", selection: Binding(
@@ -69,7 +97,7 @@ struct CalendarView: View {
             }
 
             if model.showsWeek {
-                WeekStrip(model: model, onTapDay: { day in
+                WeekStrip(weekAnchor: $weekAnchor, model: model, onTapDay: { day in
                     model.selectedDate = day
                     showsDayList = true
                 })
@@ -87,7 +115,7 @@ struct CalendarView: View {
             Spacer()
         }
         .padding(.top, DayframeSpacing.md)
-        .sheet(isPresented: $showsDayList) {
+        .sheet(isPresented: $showsDayList, onDismiss: runPendingDayListAction) {
             dayList(model: model)
         }
         .sheet(item: $selectedPost) { post in
@@ -110,7 +138,7 @@ struct CalendarView: View {
             rescheduleSheet(for: post, model: model)
         }
         .fullScreenCover(isPresented: $showsComposer) {
-            ComposerView(presetDate: model.selectedDate, onSaved: {
+            ComposerView(presetDate: composerPresetDate(for: model.selectedDate), onSaved: {
                 showsComposer = false
                 Task { await model.load() }
             })
@@ -131,6 +159,28 @@ struct CalendarView: View {
         .buttonStyle(.plain)
     }
 
+    private func runPendingDayListAction() {
+        guard let action = pendingDayListAction else { return }
+        pendingDayListAction = nil
+        switch action {
+        case .open(let post): selectedPost = post
+        case .reschedule(let post): postToReschedule = post
+        case .compose: showsComposer = true
+        }
+    }
+
+    /// The selected day is a midnight date. Use the next whole hour for today
+    /// and 9:00 for other days, so "Schedule for this day" isn't in the past.
+    private func composerPresetDate(for day: Date?) -> Date? {
+        guard let day else { return nil }
+        let calendar = Calendar.current
+        if calendar.isDateInToday(day) {
+            let nextHour = calendar.date(byAdding: .hour, value: 1, to: .now) ?? .now
+            return calendar.date(bySetting: .minute, value: 0, of: nextHour) ?? nextHour
+        }
+        return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: day) ?? day
+    }
+
     private func dayList(model: CalendarViewModel) -> some View {
         let date = model.selectedDate ?? .now
         let posts = model.posts(on: date)
@@ -145,8 +195,8 @@ struct CalendarView: View {
                     message: "No posts scheduled for this day yet.",
                     actionTitle: "Schedule for this day",
                     action: {
+                        pendingDayListAction = .compose
                         showsDayList = false
-                        showsComposer = true
                     }
                 )
             } else {
@@ -155,8 +205,8 @@ struct CalendarView: View {
                         ForEach(posts) { post in
                             VStack(alignment: .trailing, spacing: 6) {
                                 Button {
+                                    pendingDayListAction = .open(post)
                                     showsDayList = false
-                                    selectedPost = post
                                 } label: {
                                     PostCard(
                                         platforms: model.platforms(for: post),
@@ -171,8 +221,9 @@ struct CalendarView: View {
 
                                 HStack {
                                     Button {
-                                        postToReschedule = post
                                         rescheduleTargetDate = post.scheduledAt ?? date
+                                        pendingDayListAction = .reschedule(post)
+                                        showsDayList = false
                                     } label: {
                                         HStack(spacing: 4) {
                                             Image(systemName: "calendar.badge.clock")
@@ -333,15 +384,44 @@ private struct MonthGrid: View {
     }
 }
 
-/// Week view: one horizontal strip of the current week's days with post preview cards.
+/// Week view: one horizontal strip of the selected week's days with navigation.
 private struct WeekStrip: View {
+    @Binding var weekAnchor: Date
     var model: CalendarViewModel
     var onTapDay: (Date) -> Void
 
     var body: some View {
         let calendar = Calendar.current
-        let start = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
+        let start = calendar.dateInterval(of: .weekOfYear, for: weekAnchor)?.start ?? weekAnchor
+        let end = calendar.date(byAdding: .day, value: 6, to: start) ?? start
         return VStack(spacing: DayframeSpacing.md) {
+            HStack {
+                Button {
+                    weekAnchor = calendar.date(byAdding: .weekOfYear, value: -1, to: weekAnchor) ?? weekAnchor
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .frame(width: 44, height: 44)
+                        .foregroundStyle(DayframeColor.textSecondary)
+                }
+                .accessibilityLabel("Previous week")
+
+                Text("\(start.formatted(.dateTime.month(.abbreviated).day())) – \(end.formatted(.dateTime.month(.abbreviated).day()))")
+                    .font(DayframeFont.headline)
+                    .foregroundStyle(DayframeColor.textPrimary)
+
+                Spacer()
+
+                Button {
+                    weekAnchor = calendar.date(byAdding: .weekOfYear, value: 1, to: weekAnchor) ?? weekAnchor
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .frame(width: 44, height: 44)
+                        .foregroundStyle(DayframeColor.textSecondary)
+                }
+                .accessibilityLabel("Next week")
+            }
+            .padding(.horizontal, DayframeSpacing.md)
+
             HStack(spacing: DayframeSpacing.sm) {
                 ForEach(0..<7, id: \.self) { offset in
                     let day = calendar.date(byAdding: .day, value: offset, to: start) ?? .now

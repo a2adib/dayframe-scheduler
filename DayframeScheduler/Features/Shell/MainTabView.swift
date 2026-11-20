@@ -5,6 +5,8 @@ import SwiftUI
 /// Profile items, and the Create action as a raised gradient button in the
 /// center slot that opens the Composer full-screen sheet (AppFLOW §1).
 struct MainTabView: View {
+    @Environment(AppEnvironment.self) private var environment
+
     private enum Tab: Int {
         case queue, calendar, analytics, profile
     }
@@ -15,10 +17,12 @@ struct MainTabView: View {
     var body: some View {
         Group {
             switch selection {
+            // Queue owns its NavigationStack; the other tabs need one for their
+            // titles, toolbars and NavigationLinks to work.
             case .queue: QueueView()
-            case .calendar: CalendarView()
-            case .analytics: AnalyticsView()
-            case .profile: ProfileView()
+            case .calendar: NavigationStack { CalendarView() }
+            case .analytics: NavigationStack { AnalyticsView() }
+            case .profile: NavigationStack { ProfileView() }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -27,7 +31,10 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .fullScreenCover(isPresented: $showsComposer) {
-            ComposerView(onSaved: { showsComposer = false })
+            ComposerView(onSaved: {
+                showsComposer = false
+                environment.notifyPostsChanged()
+            })
         }
     }
 

@@ -49,7 +49,7 @@ struct IdeasBoardView: View {
             ComposerView(prefillIdea: idea, onSaved: {
                 ideaToConvert = nil
                 Task {
-                    await model?.moveToStage(idea: idea, to: .ready)
+                    await model?.moveToStage(idea: idea, to: .converted)
                     await model?.load()
                 }
             })
@@ -59,14 +59,43 @@ struct IdeasBoardView: View {
                 NewIdeaSheet(model: model)
             }
         }
+        .sheet(item: $ideaToEdit) { idea in
+            if let model {
+                EditIdeaSheet(model: model, idea: idea)
+            }
+        }
     }
 
     private func content(model: IdeasBoardViewModel) -> some View {
-        VStack(spacing: 0) {
+        @Bindable var model = model
+        return VStack(spacing: 0) {
+            // Search Bar
+            HStack(spacing: DayframeSpacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(DayframeColor.textTertiary)
+                TextField("Search ideas…", text: $model.searchQuery)
+                    .font(DayframeFont.body)
+                    .textInputAutocapitalization(.never)
+                if !model.searchQuery.isEmpty {
+                    Button {
+                        model.searchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(DayframeColor.textTertiary)
+                    }
+                }
+            }
+            .padding(.horizontal, DayframeSpacing.md)
+            .padding(.vertical, DayframeSpacing.sm)
+            .background(DayframeColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: DayframeRadius.input, style: .continuous))
+            .padding(.horizontal, DayframeSpacing.lg)
+            .padding(.top, DayframeSpacing.sm)
+
             // Stage Picker (Kanban Columns)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DayframeSpacing.sm) {
-                    ForEach([IdeaStage.raw, .drafting, .ready], id: \.self) { stage in
+                    ForEach([IdeaStage.raw, .drafting, .ready, .converted], id: \.self) { stage in
                         let isSelected = model.selectedStage == stage
                         let count = model.count(for: stage)
                         Button {
@@ -101,6 +130,22 @@ struct IdeasBoardView: View {
 
             Divider()
 
+            if let error = model.error {
+                HStack {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color("Danger"))
+                    Spacer()
+                    Button("Retry") {
+                        Task { await model.load() }
+                    }
+                    .font(DayframeFont.chip)
+                    .foregroundStyle(DayframeColor.primary)
+                }
+                .padding(.horizontal, DayframeSpacing.lg)
+                .padding(.vertical, DayframeSpacing.sm)
+            }
+
             // Cards Feed
             if model.filteredIdeas.isEmpty {
                 emptyStageView(model: model)
@@ -131,6 +176,9 @@ struct IdeasBoardView: View {
                 Spacer()
 
                 Menu {
+                    Button("Edit Idea", systemImage: "pencil") {
+                        ideaToEdit = idea
+                    }
                     Button("Convert to Post", systemImage: "paperplane") {
                         ideaToConvert = idea
                     }
@@ -162,18 +210,23 @@ struct IdeasBoardView: View {
             }
 
             if let link = idea.link, !link.isEmpty {
-                HStack(spacing: 4) {
-                    Image(systemName: "link")
-                        .font(.system(size: 11))
-                    Text(link)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
+                let resolvedURL = URL(string: link.contains("://") ? link : "https://\(link)")
+                if let resolvedURL {
+                    Link(destination: resolvedURL) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "link")
+                                .font(.system(size: 11))
+                            Text(link)
+                                .font(.system(size: 12))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(DayframeColor.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(DayframeColor.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
                 }
-                .foregroundStyle(DayframeColor.primary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(DayframeColor.primary.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
 
             // Tags
@@ -352,6 +405,89 @@ struct NewIdeaSheet: View {
                                 tags: parsedTags,
                                 link: link.isEmpty ? nil : link
                             )
+                            dismiss()
+                        }
+                    }
+                    .font(DayframeFont.headline)
+                    .foregroundStyle(DayframeColor.primary)
+                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty && notes.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+struct EditIdeaSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    var model: IdeasBoardViewModel
+    var idea: Idea
+
+    @State private var title: String
+    @State private var notes: String
+    @State private var stage: IdeaStage
+    @State private var link: String
+    @State private var tagsText: String
+
+    init(model: IdeasBoardViewModel, idea: Idea) {
+        self.model = model
+        self.idea = idea
+        _title = State(initialValue: idea.title)
+        _notes = State(initialValue: idea.notes)
+        _stage = State(initialValue: idea.stage)
+        _link = State(initialValue: idea.link ?? "")
+        _tagsText = State(initialValue: idea.tags.joined(separator: ", "))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Core Idea") {
+                    TextField("What's the core hook or topic?", text: $title)
+                        .font(DayframeFont.headline)
+
+                    TextField("Rough notes, outline, or key bullet points...", text: $notes, axis: .vertical)
+                        .lineLimit(4...8)
+                }
+
+                Section("Pipeline Stage") {
+                    Picker("Stage", selection: $stage) {
+                        Text("Raw Idea").tag(IdeaStage.raw)
+                        Text("Drafting").tag(IdeaStage.drafting)
+                        Text("Ready").tag(IdeaStage.ready)
+                        Text("Converted").tag(IdeaStage.converted)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Metadata & Assets") {
+                    TextField("Tags (comma separated, e.g. ai, growth)", text: $tagsText)
+
+                    TextField("Link (optional inspiration URL)", text: $link)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                }
+            }
+            .navigationTitle("Edit Idea")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let parsedTags = tagsText
+                            .split(separator: ",")
+                            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                            .filter { !$0.isEmpty }
+                        var updated = idea
+                        updated.title = title.isEmpty ? "Untitled Idea" : title
+                        updated.notes = notes
+                        updated.stage = stage
+                        updated.tags = parsedTags
+                        updated.link = link.isEmpty ? nil : link
+                        Task {
+                            await model.updateIdea(updated)
                             dismiss()
                         }
                     }

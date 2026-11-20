@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct HashtagBundle: Identifiable, Equatable {
-    let id = UUID()
+struct HashtagBundle: Identifiable, Equatable, Codable {
+    var id = UUID()
     var name: String
     var tags: [String]
 
@@ -14,11 +14,13 @@ struct HashtagManagerSheet: View {
     @Environment(\.dismiss) private var dismiss
     var onInsert: (String) -> Void
 
+    private static let customBundlesKey = "dayframe_custom_hashtag_bundles"
+
     @State private var customTagInput = ""
     @State private var customBundleName = ""
     @State private var showingAddCustom = false
 
-    @State private var bundles: [HashtagBundle] = [
+    private static let defaultBundles: [HashtagBundle] = [
         HashtagBundle(
             name: "Tech & Indie Dev",
             tags: ["#buildinpublic", "#swiftui", "#iosdev", "#indiehacker", "#developer"]
@@ -36,6 +38,15 @@ struct HashtagManagerSheet: View {
             tags: ["#saas", "#productivity", "#worksmart", "#remotework", "#buildfast"]
         )
     ]
+
+    @State private var bundles: [HashtagBundle] = {
+        if let data = UserDefaults.standard.data(forKey: customBundlesKey),
+           let saved = try? JSONDecoder().decode([HashtagBundle].self, from: data),
+           !saved.isEmpty {
+            return defaultBundles + saved
+        }
+        return defaultBundles
+    }()
 
     var body: some View {
         NavigationStack {
@@ -106,6 +117,10 @@ struct HashtagManagerSheet: View {
 
         let newBundle = HashtagBundle(name: customBundleName, tags: tags)
         bundles.append(newBundle)
+        let customOnly = Array(bundles.dropFirst(Self.defaultBundles.count))
+        if let data = try? JSONEncoder().encode(customOnly) {
+            UserDefaults.standard.set(data, forKey: Self.customBundlesKey)
+        }
         onInsert(newBundle.formattedString)
         dismiss()
     }

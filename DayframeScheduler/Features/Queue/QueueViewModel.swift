@@ -17,20 +17,24 @@ enum MoveDirection {
 final class QueueViewModel {
     private let channelRepository: ChannelRepository
     private let postRepository: PostRepository
+    private let engagementRepository: EngagementRepository?
 
     private(set) var channels: [Channel] = []
     private(set) var posts: [Post] = []
     private(set) var drafts: [Post] = []
+    private(set) var unreadInboxCount: Int = 0
     private(set) var isLoading = false
     private(set) var loadError: String?
     var currentFilter: QueueFilter = .all
 
     init(
         channelRepository: ChannelRepository,
-        postRepository: PostRepository
+        postRepository: PostRepository,
+        engagementRepository: EngagementRepository? = nil
     ) {
         self.channelRepository = channelRepository
         self.postRepository = postRepository
+        self.engagementRepository = engagementRepository
     }
 
     var failedPosts: [Post] {
@@ -95,21 +99,41 @@ final class QueueViewModel {
             channels = try await channelRepository.loadChannels()
             posts = try await postRepository.loadQueue()
             drafts = (try? await postRepository.loadDrafts()) ?? []
+            if let engagementRepository {
+                let items = (try? await engagementRepository.loadItems()) ?? []
+                unreadInboxCount = items.filter { !$0.isReplied }.count
+            }
         } catch {
             loadError = "Couldn't load your queue. Check your connection and retry."
         }
         isLoading = false
     }
 
+    func canReorder(_ post: Post) -> Bool {
+        guard post.status == .scheduled, let scheduledAt = post.scheduledAt else { return false }
+        return scheduledAt > .now
+    }
+
     func delete(_ post: Post) async {
-        try? await postRepository.delete(post)
-        posts.removeAll { $0.id == post.id }
-        drafts.removeAll { $0.id == post.id }
+        do {
+            try await postRepository.delete(post)
+            posts.removeAll { $0.id == post.id }
+            drafts.removeAll { $0.id == post.id }
+        } catch {
+            loadError = "Couldn't delete post. Please try again."
+        }
     }
 
     func duplicate(_ post: Post) async {
-        if let copy = try? await postRepository.duplicate(post) {
-            posts.append(copy)
+        do {
+            let copy = try await postRepository.duplicate(post)
+            if copy.status == .draft {
+                drafts.insert(copy, at: 0)
+            } else {
+                posts.append(copy)
+            }
+        } catch {
+            loadError = "Couldn't duplicate post. Please try again."
         }
     }
 

@@ -39,6 +39,7 @@ struct AuthView: View {
                         : (isSignUp ? "Create account" : "Sign in"),
                     action: submit
                 )
+                .disabled(isSigningIn)
                 .padding(.horizontal, DayframeSpacing.xl)
 
                 Button(action: {
@@ -49,6 +50,7 @@ struct AuthView: View {
                         .font(DayframeFont.caption)
                         .foregroundStyle(DayframeColor.primary)
                 }
+                .disabled(isSigningIn)
                 .padding(.top, DayframeSpacing.xs)
 
                 socialButton(
@@ -56,6 +58,14 @@ struct AuthView: View {
                     systemImage: "g.circle",
                     action: { Task { await oauth(.google) } }
                 )
+                .disabled(isSigningIn)
+
+                socialButton(
+                    title: "Continue with Apple",
+                    systemImage: "apple.logo",
+                    action: { Task { await oauth(.apple) } }
+                )
+                .disabled(isSigningIn)
             }
             .padding(.horizontal, DayframeSpacing.xl)
 
@@ -75,6 +85,9 @@ struct AuthView: View {
                     SecureField("", text: text)
                 } else {
                     TextField("", text: text)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                 }
             }
             .textFieldStyle(.plain)

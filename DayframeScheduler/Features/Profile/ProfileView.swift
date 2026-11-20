@@ -7,6 +7,8 @@ struct ProfileView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: ProfileViewModel?
     @State private var showsDeleteConfirmation = false
+    @State private var showsProSheet = false
+    @State private var deleteError: String?
 
     var body: some View {
         Group {
@@ -19,6 +21,11 @@ struct ProfileView: View {
         }
         .background(DayframeColor.background)
         .navigationTitle("Profile")
+        .onAppear {
+            if let model {
+                Task { await model.load() }
+            }
+        }
         .task {
             if model == nil {
                 let viewModel = ProfileViewModel(
@@ -29,6 +36,27 @@ struct ProfileView: View {
                 model = viewModel
                 await viewModel.load()
             }
+        }
+        .sheet(isPresented: $showsProSheet) {
+            VStack(spacing: DayframeSpacing.lg) {
+                DayframeLogoMark(size: 56)
+                Text("Dayframe Pro")
+                    .font(DayframeFont.largeTitle(24))
+                    .foregroundStyle(DayframeColor.textPrimary)
+                Text("Unlock 90-day analytics, unlimited channels, and unlimited scheduled posts.")
+                    .font(DayframeFont.body)
+                    .foregroundStyle(DayframeColor.textSecondary)
+                    .multilineTextAlignment(.center)
+                Text("In-app upgrades aren't available yet.")
+                    .font(DayframeFont.caption)
+                    .foregroundStyle(DayframeColor.textSecondary)
+                PrimaryButton(title: "Got it") {
+                    showsProSheet = false
+                }
+            }
+            .padding(DayframeSpacing.xl)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -52,10 +80,26 @@ struct ProfileView: View {
             ),
             titleVisibility: .visible
         ) {
-            Button("Delete account", role: .destructive) {}
+            Button("Delete account", role: .destructive) {
+                Task {
+                    do {
+                        try await environment.deleteAccount()
+                    } catch {
+                        deleteError = error.localizedDescription
+                    }
+                }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This removes your data and revokes all connected tokens. This cannot be undone.")
+        }
+        .alert(
+            "Couldn't delete your account",
+            isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "")
         }
     }
 
@@ -146,20 +190,28 @@ struct ProfileView: View {
 
     private func planSection(model: ProfileViewModel) -> some View {
         Section {
-            HStack(spacing: DayframeSpacing.md) {
-                DayframeLogoMark(size: 40)
-                    .opacity(0.5)
-                VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
-                    Text("Upgrade to Pro")
-                        .font(DayframeFont.headline)
-                        .foregroundStyle(DayframeColor.textPrimary)
-                    Text("Unlimited channels, scheduled posts, and 90-day analytics.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(DayframeColor.textSecondary)
+            Button {
+                showsProSheet = true
+            } label: {
+                HStack(spacing: DayframeSpacing.md) {
+                    DayframeLogoMark(size: 40)
+                        .opacity(0.5)
+                    VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
+                        Text(model.profile?.plan == .pro ? "Pro Plan Active" : "Upgrade to Pro")
+                            .font(DayframeFont.headline)
+                            .foregroundStyle(DayframeColor.textPrimary)
+                        Text("Unlimited channels, scheduled posts, and 90-day analytics.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(DayframeColor.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(DayframeColor.textTertiary)
                 }
             }
+            .buttonStyle(.plain)
             .listRowBackground(DayframeColor.background)
-            .swipeActions {}
         } header: {
             Text("Subscription")
         }

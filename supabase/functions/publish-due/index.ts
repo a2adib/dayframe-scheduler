@@ -301,8 +301,8 @@ async function markPublished(target: ClaimedTarget, externalId: string): Promise
   });
 }
 
-async function markFailed(target: ClaimedTarget, attempts: number, message: string): Promise<void> {
-  if (attempts < MAX_ATTEMPTS) {
+async function markFailed(target: ClaimedTarget, attempts: number, message: string, retryable: boolean): Promise<void> {
+  if (retryable && attempts < MAX_ATTEMPTS) {
     const delay = BACKOFF_MINUTES[Math.min(attempts, BACKOFF_MINUTES.length) - 1] ?? 15;
     await fetch(`${SUPABASE_URL}/rest/v1/post_targets?id=eq.${target.target_id}`, {
       method: "PATCH",
@@ -380,11 +380,20 @@ Deno.serve(async (req) => {
     } catch (error) {
       const status = error instanceof PublishError ? error.status : 500;
       const message = error instanceof Error ? error.message : String(error);
+      // 401 expires the channel, and claim_due_targets skips expired channels,
+      // so a retry would never run: the target would sit in `scheduled` forever.
+      // Fail it now so the user sees the error and can reconnect + retry.
       if (status === 401) await expireChannel(target.channel_id);
       const attempts = target.attempts + 1;
-      if (!isPermanent(status) && status !== 401 && attempts < MAX_ATTEMPTS) retried++;
+      const retryable = !isPermanent(status) && status !== 401;
+      if (retryable && attempts < MAX_ATTEMPTS) retried++;
       else failed++;
-      await markFailed(target, attempts, message);
+      await markFailed(
+        target,
+        attempts,
+        status === 401 ? `Channel needs reconnecting: ${message}` : message,
+        retryable,
+      );
     }
   }
 

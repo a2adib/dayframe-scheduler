@@ -6,8 +6,10 @@ struct AuthFlowView: View {
     var onAuthenticated: () -> Void
 
     @Environment(AppEnvironment.self) private var environment
+    @AppStorage("dayframe_has_completed_onboarding") private var hasCompletedOnboarding = false
     @State private var route: AuthFlowRoute = .onboarding
     @State private var channels: [Channel] = []
+    @State private var initializedRoute = false
 
     enum Route {
         case onboarding
@@ -19,7 +21,10 @@ struct AuthFlowView: View {
         Group {
             switch route {
             case .onboarding:
-                OnboardingView { route = .auth }
+                OnboardingView {
+                    hasCompletedOnboarding = true
+                    route = .auth
+                }
             case .auth:
                 AuthView(onAuthenticated: { route = .postAuth })
             case .connectChannels:
@@ -34,6 +39,14 @@ struct AuthFlowView: View {
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: route)
+        .onAppear {
+            if !initializedRoute {
+                initializedRoute = true
+                if hasCompletedOnboarding {
+                    route = .auth
+                }
+            }
+        }
     }
 
     private enum AuthFlowRoute {
