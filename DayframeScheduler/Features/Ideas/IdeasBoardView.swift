@@ -130,6 +130,22 @@ struct IdeasBoardView: View {
 
             Divider()
 
+            if let error = model.error {
+                HStack {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color("Danger"))
+                    Spacer()
+                    Button("Retry") {
+                        Task { await model.load() }
+                    }
+                    .font(DayframeFont.chip)
+                    .foregroundStyle(DayframeColor.primary)
+                }
+                .padding(.horizontal, DayframeSpacing.lg)
+                .padding(.vertical, DayframeSpacing.sm)
+            }
+
             // Cards Feed
             if model.filteredIdeas.isEmpty {
                 emptyStageView(model: model)
@@ -194,18 +210,23 @@ struct IdeasBoardView: View {
             }
 
             if let link = idea.link, !link.isEmpty {
-                HStack(spacing: 4) {
-                    Image(systemName: "link")
-                        .font(.system(size: 11))
-                    Text(link)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
+                let resolvedURL = URL(string: link.contains("://") ? link : "https://\(link)")
+                if let resolvedURL {
+                    Link(destination: resolvedURL) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "link")
+                                .font(.system(size: 11))
+                            Text(link)
+                                .font(.system(size: 12))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(DayframeColor.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(DayframeColor.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
                 }
-                .foregroundStyle(DayframeColor.primary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(DayframeColor.primary.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
 
             // Tags
