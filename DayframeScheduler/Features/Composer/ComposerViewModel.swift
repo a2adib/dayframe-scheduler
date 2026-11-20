@@ -33,6 +33,7 @@ final class ComposerViewModel {
     private let postRepository: PostRepository
     private let scheduleRepository: ScheduleRepository
     let editingPost: Post?
+    private let templatePost: Post?
 
     private(set) var channels: [Channel] = []
     var selectedChannelIDs: Set<UUID> = []
@@ -82,6 +83,7 @@ final class ComposerViewModel {
         self.postRepository = postRepository
         self.scheduleRepository = scheduleRepository
         self.editingPost = editingPost
+        self.templatePost = templatePost
 
         if let editingPost {
             self.bodyText = editingPost.body
@@ -153,9 +155,11 @@ final class ComposerViewModel {
             channelsLoadFailed = true
             validationError = "Couldn't load your channels. Check your connection and try again."
         }
-        if let editingPost {
-            selectedChannelIDs = Set(editingPost.targets.map(\.channelID))
-            for target in editingPost.targets {
+        if let sourcePost = editingPost ?? templatePost {
+            if editingPost != nil {
+                selectedChannelIDs = Set(sourcePost.targets.map(\.channelID))
+            }
+            for target in sourcePost.targets {
                 if let platform = channels.first(where: { $0.id == target.channelID })?.platform {
                     if let override = target.bodyOverride {
                         bodyOverrides[platform] = override

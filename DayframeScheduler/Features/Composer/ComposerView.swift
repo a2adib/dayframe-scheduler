@@ -439,9 +439,17 @@ struct ComposerView: View {
 
     private func mediaRow(model: ComposerViewModel) -> some View {
         VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
-            Text("Media Assets")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(DayframeColor.textSecondary)
+            HStack {
+                Text("Media Assets")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DayframeColor.textSecondary)
+                Spacer()
+                if let existingCount = model.editingPost?.media.count, existingCount > 0 {
+                    Text("\(existingCount) attached")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DayframeColor.primary)
+                }
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DayframeSpacing.md) {
