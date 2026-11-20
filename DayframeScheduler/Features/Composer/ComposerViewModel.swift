@@ -75,7 +75,8 @@ final class ComposerViewModel {
         scheduleRepository: ScheduleRepository,
         editingPost: Post? = nil,
         presetDate: Date? = nil,
-        prefillIdea: Idea? = nil
+        prefillIdea: Idea? = nil,
+        templatePost: Post? = nil
     ) {
         self.channelRepository = channelRepository
         self.postRepository = postRepository
@@ -95,6 +96,13 @@ final class ComposerViewModel {
             } else {
                 self.publishingAction = .schedule
             }
+        } else if let templatePost {
+            self.bodyText = templatePost.body
+            self.firstComment = templatePost.firstComment ?? ""
+            self.showsFirstCommentField = !self.firstComment.isEmpty
+            self.publishingAction = .addToQueue
+            self.scheduleMode = .queue
+            self.selectedChannelIDs = Set(templatePost.targets.map(\.channelID))
         } else if let prefillIdea {
             var combined = prefillIdea.title
             if !prefillIdea.notes.isEmpty {

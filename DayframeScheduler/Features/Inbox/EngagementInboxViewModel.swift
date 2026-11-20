@@ -46,13 +46,20 @@ final class EngagementInboxViewModel {
         }
     }
 
+    private(set) var errorMessage: String?
+
     func load() async {
         isLoading = true
+        errorMessage = nil
         defer { isLoading = false }
-        items = (try? await engagementRepository.loadItems()) ?? []
-        channels = (try? await channelRepository.loadChannels()) ?? []
-        if selectedItem == nil, let first = filteredItems.first {
-            selectedItem = first
+        do {
+            items = try await engagementRepository.loadItems()
+            channels = try await channelRepository.loadChannels()
+            if selectedItem == nil, let first = filteredItems.first {
+                selectedItem = first
+            }
+        } catch {
+            errorMessage = "Couldn't load inbox items. Check your connection and retry."
         }
     }
 
@@ -64,23 +71,31 @@ final class EngagementInboxViewModel {
     func sendReply(to item: EngagementItem, text: String) async {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         isSendingReply = true
+        errorMessage = nil
         defer { isSendingReply = false }
 
-        if let updated = try? await engagementRepository.sendReply(itemID: item.id, replyText: text) {
+        do {
+            let updated = try await engagementRepository.sendReply(itemID: item.id, replyText: text)
             items = items.map { $0.id == item.id ? updated : $0 }
             if selectedItem?.id == item.id {
                 selectedItem = updated
             }
             replyText = ""
+        } catch {
+            errorMessage = "Couldn't send reply: \(error.localizedDescription)"
         }
     }
 
     func toggleStar(for item: EngagementItem) async {
-        if let updated = try? await engagementRepository.toggleStar(itemID: item.id) {
+        errorMessage = nil
+        do {
+            let updated = try await engagementRepository.toggleStar(itemID: item.id)
             items = items.map { $0.id == item.id ? updated : $0 }
             if selectedItem?.id == item.id {
                 selectedItem = updated
             }
+        } catch {
+            errorMessage = "Couldn't update star: \(error.localizedDescription)"
         }
     }
 

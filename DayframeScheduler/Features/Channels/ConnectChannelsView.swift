@@ -32,6 +32,14 @@ struct ConnectChannelsView: View {
         .tiktok
     ]
 
+    /// "All" lists every network (so new ones can be connected); the other
+    /// filters list only networks with a channel in that state.
+    private var visiblePlatforms: [Platform] {
+        guard channelFilter != .all else { return allPlatforms }
+        let matching = Set(filteredChannels.map(\.platform))
+        return allPlatforms.filter { matching.contains($0) }
+    }
+
     var filteredChannels: [Channel] {
         switch channelFilter {
         case .all:
@@ -61,7 +69,7 @@ struct ConnectChannelsView: View {
             }
 
             Section {
-                ForEach(allPlatforms, id: \.self) { platform in
+                ForEach(visiblePlatforms, id: \.self) { platform in
                     channelRow(platform: platform)
                 }
             } header: {
@@ -242,7 +250,10 @@ struct ConnectChannelsView: View {
 
     private func connect(_ platform: Platform) async {
         limitReached = !isPro && channels.count >= 3
-        guard !limitReached else { return }
+        if limitReached {
+            connectionError = "Free plan connects up to 3 channels. Disconnect a channel or upgrade to Pro."
+            return
+        }
         connectingPlatform = platform
         defer { connectingPlatform = nil }
         do {

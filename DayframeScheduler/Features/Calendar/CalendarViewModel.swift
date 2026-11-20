@@ -10,6 +10,7 @@ final class CalendarViewModel {
     private(set) var channels: [Channel] = []
     private(set) var postsByDay: [Date: [Post]] = [:]
     private(set) var isLoading = false
+    private(set) var errorMessage: String?
     var selectedDate: Date?
     var showsWeek = false
     var selectedPlatform: Platform?
@@ -24,15 +25,20 @@ final class CalendarViewModel {
 
     func load() async {
         isLoading = true
+        errorMessage = nil
         defer { isLoading = false }
-        channels = (try? await channelRepository.loadChannels()) ?? []
-        let queue = (try? await postRepository.loadQueue()) ?? []
-        let calendar = Calendar.current
-        postsByDay = [:]
-        for post in queue {
-            guard let date = post.scheduledAt else { continue }
-            let day = calendar.startOfDay(for: date)
-            postsByDay[day, default: []].append(post)
+        do {
+            channels = try await channelRepository.loadChannels()
+            let queue = try await postRepository.loadQueue()
+            let calendar = Calendar.current
+            postsByDay = [:]
+            for post in queue {
+                guard let date = post.scheduledAt else { continue }
+                let day = calendar.startOfDay(for: date)
+                postsByDay[day, default: []].append(post)
+            }
+        } catch {
+            errorMessage = "Couldn't load calendar posts."
         }
     }
 
@@ -47,12 +53,13 @@ final class CalendarViewModel {
 
     func platforms(for post: Post) -> [Platform] {
         let channelIDs = Set(post.targets.map(\.channelID))
-        let matched = channels.filter { channelIDs.contains($0.id) }.map(\.platform)
-        return matched.isEmpty ? [.instagram] : matched
+        return channels.filter { channelIDs.contains($0.id) }.map(\.platform)
     }
 
     func reschedule(post: Post, to newDate: Date) async {
-        if let updated = try? await postRepository.reschedule(post, to: newDate) {
+        errorMessage = nil
+        do {
+            let updated = try await postRepository.reschedule(post, to: newDate)
             let calendar = Calendar.current
             // Remove from old date
             if let oldDate = post.scheduledAt {
@@ -63,6 +70,8 @@ final class CalendarViewModel {
             let newDay = calendar.startOfDay(for: newDate)
             postsByDay[newDay, default: []].append(updated)
             postsByDay[newDay]?.sort { ($0.scheduledAt ?? .distantPast) < ($1.scheduledAt ?? .distantPast) }
+        } catch {
+            errorMessage = "Couldn't reschedule post. Please try again."
         }
     }
 }

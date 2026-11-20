@@ -20,6 +20,14 @@ final class AppEnvironment {
     private(set) var currentUser: AuthUser?
     private(set) var currentProfile: Profile?
 
+    /// Bumped whenever posts change outside a screen's own view model (e.g.
+    /// the tab-bar composer), so Queue and Calendar know to reload.
+    private(set) var postsVersion = 0
+
+    func notifyPostsChanged() {
+        postsVersion += 1
+    }
+
     var preferredColorScheme: ColorScheme? {
         switch currentProfile?.theme {
         case .light: return .light
@@ -37,13 +45,8 @@ final class AppEnvironment {
         let resolvedMode: BackendMode
         if let explicitMode = mode {
             resolvedMode = explicitMode
-        } else if let envMode = ProcessInfo.processInfo.environment["DAYFRAME_BACKEND"],
-                  let parsed = BackendMode(rawValue: envMode) {
-            resolvedMode = parsed
         } else {
-            // Always default to live Supabase backend for real daily use
-            resolvedMode = .live
-            UserDefaults.standard.set(BackendMode.live.rawValue, forKey: "dayframe_backend_mode")
+            resolvedMode = AppConfig.defaultBackendMode
         }
         self.mode = resolvedMode
         switch resolvedMode {
@@ -136,6 +139,13 @@ final class AppEnvironment {
 
     func signOut() async {
         try? await authService.signOut()
+        currentUser = nil
+        currentProfile = nil
+    }
+
+    /// Permanently deletes the account server-side, then returns to sign-in.
+    func deleteAccount() async throws {
+        try await authService.deleteAccount()
         currentUser = nil
         currentProfile = nil
     }

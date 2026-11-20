@@ -26,15 +26,19 @@ struct AnalyticsView: View {
             if model == nil {
                 let viewModel = AnalyticsViewModel(
                     analyticsRepository: environment.analyticsRepository,
-                    channelRepository: environment.channelRepository
+                    channelRepository: environment.channelRepository,
+                    postRepository: environment.postRepository
                 )
                 model = viewModel
                 await viewModel.load()
             }
         }
         .fullScreenCover(item: $postToRepurpose) { post in
-            ComposerView(editingPost: post, onSaved: {
+            // A template, not an edit: the repurposed post is new and has
+            // no row in the database yet.
+            ComposerView(templatePost: post, onSaved: {
                 postToRepurpose = nil
+                environment.notifyPostsChanged()
                 Task { await model?.load() }
             })
         }
@@ -136,7 +140,10 @@ struct AnalyticsView: View {
             }
             .padding(.top, 4)
 
-            Text("You're on track! Post 1 more time to hit your weekly consistency goal.")
+            let remaining = max(streak.weeklyGoal - streak.publishedThisWeek, 0)
+            Text(remaining == 0
+                 ? "Weekly consistency goal hit! Keep the momentum going."
+                 : "Post \(remaining) more time\(remaining == 1 ? "" : "s") to hit your weekly consistency goal.")
                 .font(.system(size: 12))
                 .foregroundStyle(DayframeColor.textSecondary)
                 .padding(.top, 2)
@@ -150,7 +157,7 @@ struct AnalyticsView: View {
         Picker("Range", selection: Binding(
             get: { model.rangeDays },
             set: { newValue in
-                if newValue == 90 {
+                if newValue == 90 && environment.currentProfile?.plan != .pro {
                     model.showsProPrompt = true
                 } else {
                     model.rangeDays = newValue
@@ -374,10 +381,12 @@ struct AnalyticsView: View {
                 .font(DayframeFont.body)
                 .foregroundStyle(DayframeColor.textSecondary)
                 .multilineTextAlignment(.center)
-            PrimaryButton(title: "Upgrade to Pro", systemImage: "crown") {
-                model.showsProPrompt = false
-            }
-            SecondaryButton(title: "Restore purchases") {
+            // In-app purchase isn't implemented yet, so don't show purchase
+            // buttons that silently do nothing.
+            Text("Upgrading from the app isn't available yet.")
+                .font(DayframeFont.caption)
+                .foregroundStyle(DayframeColor.textSecondary)
+            PrimaryButton(title: "Got it") {
                 model.showsProPrompt = false
             }
         }

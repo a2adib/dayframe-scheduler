@@ -16,6 +16,7 @@ struct PostDetailView: View {
     @State private var isRetrying = false
     @State private var rescheduleDate: Date = .now.addingTimeInterval(3_600)
     @State private var updatedPost: Post?
+    @State private var actionError: String?
 
     private var displayPost: Post { updatedPost ?? post }
 
@@ -51,7 +52,16 @@ struct PostDetailView: View {
         .fullScreenCover(isPresented: $showsComposer) {
             ComposerView(editingPost: displayPost, onSaved: {
                 showsComposer = false
-                onRescheduled(displayPost)
+                Task {
+                    let queue = (try? await environment.postRepository.loadQueue()) ?? []
+                    let drafts = (try? await environment.postRepository.loadDrafts()) ?? []
+                    if let refreshed = (queue + drafts).first(where: { $0.id == displayPost.id }) {
+                        updatedPost = refreshed
+                        onRescheduled(refreshed)
+                    } else {
+                        onRescheduled(displayPost)
+                    }
+                }
             })
         }
         .confirmationDialog(
@@ -66,6 +76,17 @@ struct PostDetailView: View {
         }
         .sheet(isPresented: $showsReschedule) {
             rescheduleSheet
+        }
+        .alert(
+            "Action failed",
+            isPresented: Binding(
+                get: { actionError != nil },
+                set: { if !$0 { actionError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(actionError ?? "")
         }
     }
 
@@ -133,7 +154,7 @@ struct PostDetailView: View {
                 PrimaryButton(title: "Finish & schedule", systemImage: "pencil") {
                     showsComposer = true
                 }
-            } else {
+            } else if displayPost.status != .published && displayPost.status != .publishing {
                 SecondaryButton(title: "Reschedule", systemImage: "clock") {
                     rescheduleDate = displayPost.scheduledAt ?? .now.addingTimeInterval(3_600)
                     showsReschedule = true
@@ -159,11 +180,14 @@ struct PostDetailView: View {
             .tint(DayframeColor.primary)
             PrimaryButton(title: "Reschedule") {
                 Task {
-                    if let updated = try? await environment.postRepository.reschedule(displayPost, to: rescheduleDate) {
+                    do {
+                        let updated = try await environment.postRepository.reschedule(displayPost, to: rescheduleDate)
                         updatedPost = updated
                         onRescheduled(updated)
+                        showsReschedule = false
+                    } catch {
+                        actionError = error.localizedDescription
                     }
-                    showsReschedule = false
                 }
             }
         }
@@ -176,18 +200,25 @@ struct PostDetailView: View {
         isRetrying = true
         Task {
             defer { isRetrying = false }
-            if let retried = try? await environment.postRepository.retry(displayPost) {
+            do {
+                let retried = try await environment.postRepository.retry(displayPost)
                 updatedPost = retried
                 onRescheduled(retried)
+            } catch {
+                actionError = error.localizedDescription
             }
         }
     }
 
     private func deletePost() {
         Task {
-            try? await environment.postRepository.delete(displayPost)
-            onDeleted()
-            dismiss()
+            do {
+                try await environment.postRepository.delete(displayPost)
+                onDeleted()
+                dismiss()
+            } catch {
+                actionError = error.localizedDescription
+            }
         }
     }
 }

@@ -325,9 +325,21 @@ struct LivePostRepository: PostRepository {
         var copy = post
         copy.id = UUID()
         copy.firstComment = post.firstComment
-        copy.targets = post.targets.map { var t = $0; t.id = UUID(); return t }
+        let targetStatus: PostStatus = (post.status == .published || post.status == .publishing || post.status == .failed) ? .draft : post.status
+        let targetMode: ScheduleMode? = targetStatus == .draft ? nil : post.scheduleMode
+        let targetDate: Date? = targetStatus == .draft ? nil : post.scheduledAt
+        copy.targets = post.targets.map {
+            var t = $0
+            t.id = UUID()
+            t.status = targetStatus
+            t.scheduledAt = targetDate
+            t.publishedAt = nil
+            t.attempts = 0
+            t.errorMessage = nil
+            return t
+        }
         copy.media = post.media.map { var m = $0; m.id = UUID(); return m }
-        return try await save(copy, as: post.status, scheduleMode: post.scheduleMode, scheduledAt: post.scheduledAt)
+        return try await save(copy, as: targetStatus, scheduleMode: targetMode, scheduledAt: targetDate)
     }
 
     func reorderQueue(posts: [Post]) async throws {

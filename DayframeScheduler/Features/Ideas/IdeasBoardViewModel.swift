@@ -46,6 +46,7 @@ final class IdeasBoardViewModel {
     }
 
     func addIdea(title: String, notes: String, stage: IdeaStage, tags: [String], link: String?) async {
+        error = nil
         let newIdea = Idea(
             id: UUID(),
             title: title,
@@ -57,20 +58,32 @@ final class IdeasBoardViewModel {
             createdAt: .now,
             updatedAt: .now
         )
-        if let saved = try? await ideaRepository.saveIdea(newIdea) {
+        do {
+            let saved = try await ideaRepository.saveIdea(newIdea)
             ideas.insert(saved, at: 0)
+        } catch {
+            self.error = error.localizedDescription
         }
     }
 
     func updateIdea(_ idea: Idea) async {
-        if let updated = try? await ideaRepository.updateIdea(idea) {
+        error = nil
+        do {
+            let updated = try await ideaRepository.updateIdea(idea)
             ideas = ideas.map { $0.id == idea.id ? updated : $0 }
+        } catch {
+            self.error = error.localizedDescription
         }
     }
 
     func deleteIdea(_ idea: Idea) async {
-        try? await ideaRepository.deleteIdea(idea)
-        ideas.removeAll { $0.id == idea.id }
+        error = nil
+        do {
+            try await ideaRepository.deleteIdea(idea)
+            ideas.removeAll { $0.id == idea.id }
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 
     func advanceStage(for idea: Idea) async {
@@ -82,14 +95,16 @@ final class IdeasBoardViewModel {
         case .converted: nextStage = nil
         }
         guard let next = nextStage else { return }
-        if let updated = try? await ideaRepository.moveStage(ideaID: idea.id, to: next) {
-            ideas = ideas.map { $0.id == idea.id ? updated : $0 }
-        }
+        await moveToStage(idea: idea, to: next)
     }
 
     func moveToStage(idea: Idea, to stage: IdeaStage) async {
-        if let updated = try? await ideaRepository.moveStage(ideaID: idea.id, to: stage) {
+        error = nil
+        do {
+            let updated = try await ideaRepository.moveStage(ideaID: idea.id, to: stage)
             ideas = ideas.map { $0.id == idea.id ? updated : $0 }
+        } catch {
+            self.error = error.localizedDescription
         }
     }
 }

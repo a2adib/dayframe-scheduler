@@ -4,6 +4,7 @@ import SwiftUI
 struct DayframeSchedulerApp: App {
     @State private var environment = AppEnvironment.shared
     @State private var authChecked = false
+    @State private var completedAuthFlow = false
 
     var body: some Scene {
         WindowGroup {
@@ -11,10 +12,12 @@ struct DayframeSchedulerApp: App {
                 if ProcessInfo.processInfo.environment["DAYFRAME_SCREEN"] != nil {
                     debugScreen
                 } else if authChecked {
-                    if environment.currentUser != nil {
+                    if environment.currentUser != nil && completedAuthFlow {
                         MainTabView()
                     } else {
-                        AuthFlowView(onAuthenticated: {})
+                        AuthFlowView(onAuthenticated: {
+                            completedAuthFlow = true
+                        })
                     }
                 } else {
                     LaunchView()
@@ -30,6 +33,7 @@ struct DayframeSchedulerApp: App {
                                 _ = await group.next()
                                 group.cancelAll()
                             }
+                            completedAuthFlow = (environment.currentUser != nil)
                             authChecked = true
                         }
                 }
@@ -37,6 +41,11 @@ struct DayframeSchedulerApp: App {
             .environment(environment)
             .preferredColorScheme(environment.preferredColorScheme)
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: authChecked)
+            .onChange(of: environment.currentUser == nil) { _, isSignedOut in
+                if isSignedOut {
+                    completedAuthFlow = false
+                }
+            }
         }
     }
 

@@ -8,10 +8,12 @@ final class ProfileViewModel {
     private let channelRepository: ChannelRepository
     private let scheduleRepository: ScheduleRepository
 
+    private static let notificationsKey = "dayframe_notification_prefs"
+
     private(set) var profile: Profile?
     private(set) var channels: [Channel] = []
     private(set) var slots: [PostingSlot] = []
-    private(set) var notifications = NotificationPreferences(postPublished: true, postFailed: true, weeklyReport: false)
+    private(set) var notifications: NotificationPreferences
     private(set) var isLoading = false
     var showsDeleteConfirmation = false
 
@@ -23,6 +25,12 @@ final class ProfileViewModel {
         self.profileRepository = profileRepository
         self.channelRepository = channelRepository
         self.scheduleRepository = scheduleRepository
+        if let data = UserDefaults.standard.data(forKey: Self.notificationsKey),
+           let saved = try? JSONDecoder().decode(NotificationPreferences.self, from: data) {
+            self.notifications = saved
+        } else {
+            self.notifications = NotificationPreferences(postPublished: true, postFailed: true, weeklyReport: false)
+        }
     }
 
     func load() async {
@@ -67,5 +75,8 @@ final class ProfileViewModel {
 
     func setNotification(_ keyPath: WritableKeyPath<NotificationPreferences, Bool>, to value: Bool) {
         notifications[keyPath: keyPath] = value
+        if let data = try? JSONEncoder().encode(notifications) {
+            UserDefaults.standard.set(data, forKey: Self.notificationsKey)
+        }
     }
 }

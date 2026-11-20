@@ -46,10 +46,16 @@ struct LiveAuthService: AuthService {
         try await client.auth.signOut()
     }
 
-    /// Deleting the auth user requires the service-role key and runs server-side;
-    /// the client can only clear local data. The Edge Function lands in Phase 8.
+    /// Deleting the auth user needs the service-role key, so the
+    /// delete-account Edge Function does it server-side (data cascades).
     func deleteAccount() async throws {
-        try await signOut()
+        struct DeleteAccountResponse: Decodable { let deleted: Bool }
+        let response: DeleteAccountResponse = try await client.functions.invoke(
+            "delete-account",
+            options: FunctionInvokeOptions(method: .post)
+        )
+        guard response.deleted else { throw AuthError.invalidCredentials("Could not delete the account.") }
+        try? await client.auth.signOut()
     }
 
     private func friendly(_ error: Error) -> String {

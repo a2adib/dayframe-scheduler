@@ -12,6 +12,7 @@ struct QueueView: View {
     @State private var showsChannels = false
     @State private var showsInbox = false
     @State private var editingDraft: Post?
+    @State private var showsComposer = false
     @State private var selectedTopTab: TopTab = .queue
 
     enum TopTab: String, CaseIterable, Identifiable {
@@ -75,6 +76,15 @@ struct QueueView: View {
                         .presentationDetents([.large])
                 }
             }
+            .fullScreenCover(isPresented: $showsComposer) {
+                ComposerView(onSaved: {
+                    showsComposer = false
+                    environment.notifyPostsChanged()
+                })
+            }
+            .onChange(of: environment.postsVersion) {
+                Task { await model?.load() }
+            }
             .fullScreenCover(item: $editingDraft) { draft in
                 ComposerView(editingPost: draft, onSaved: {
                     editingDraft = nil
@@ -102,7 +112,8 @@ struct QueueView: View {
                 if model == nil {
                     let viewModel = QueueViewModel(
                         channelRepository: environment.channelRepository,
-                        postRepository: environment.postRepository
+                        postRepository: environment.postRepository,
+                        engagementRepository: environment.engagementRepository
                     )
                     model = viewModel
                     await viewModel.load()
@@ -134,10 +145,12 @@ struct QueueView: View {
                             .font(.system(size: 17))
                             .foregroundStyle(DayframeColor.textPrimary)
 
-                        Circle()
-                            .fill(DayframeColor.primary)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 4, y: -4)
+                        if (model?.unreadInboxCount ?? 0) > 0 {
+                            Circle()
+                                .fill(DayframeColor.primary)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 4, y: -4)
+                        }
                     }
                 }
                 .accessibilityLabel("Community Inbox")
@@ -213,18 +226,19 @@ struct QueueView: View {
                     title: "No drafts",
                     message: "Save drafts from the composer to review and schedule later.",
                     actionTitle: "Create post",
-                    action: {}
+                    action: { showsComposer = true }
                 )
             } else {
                 EmptyStateView(
                     title: "Nothing planned",
                     message: "Nothing planned. Frame your day with consistent publishing.",
                     actionTitle: "Create post",
-                    action: {}
+                    action: { showsComposer = true }
                 )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .refreshable { await model.load() }
     }
 
     private func queueList(model: QueueViewModel) -> some View {
@@ -358,16 +372,18 @@ struct QueueView: View {
             }
         }
         .contextMenu {
-            Button {
-                Task { await model.movePost(post, direction: .up) }
-            } label: {
-                Label("Move Up in Queue", systemImage: "arrow.up")
-            }
+            if model.canReorder(post) {
+                Button {
+                    Task { await model.movePost(post, direction: .up) }
+                } label: {
+                    Label("Move Up in Queue", systemImage: "arrow.up")
+                }
 
-            Button {
-                Task { await model.movePost(post, direction: .down) }
-            } label: {
-                Label("Move Down in Queue", systemImage: "arrow.down")
+                Button {
+                    Task { await model.movePost(post, direction: .down) }
+                } label: {
+                    Label("Move Down in Queue", systemImage: "arrow.down")
+                }
             }
 
             Button {
@@ -383,34 +399,6 @@ struct QueueView: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                Task { await model.movePost(post, direction: .up) }
-            } label: {
-                Label("Move Up", systemImage: "arrow.up")
-            }
-            .tint(DayframeColor.primary)
-
-            Button {
-                Task { await model.movePost(post, direction: .down) }
-            } label: {
-                Label("Move Down", systemImage: "arrow.down")
-            }
-            .tint(Color.indigo)
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                postToConfirmDelete = post
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            Button {
-                Task { await model.duplicate(post) }
-            } label: {
-                Label("Duplicate", systemImage: "plus.square.on.square")
-            }
-            .tint(DayframeColor.primary)
         }
     }
 

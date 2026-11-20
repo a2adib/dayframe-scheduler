@@ -116,21 +116,39 @@ struct LiveEngagementRepository: EngagementRepository {
         )
     }
 
-    func markReplied(itemID: UUID, isReplied: Bool) async throws -> EngagementItem {
-        let nowStr = isReplied ? SupabaseService.supabaseTimestampFormatter.string(from: .now) : nil
-        let payload = MarkRepliedPayload(
-            is_replied: isReplied,
-            reply_text: isReplied ? nil : nil,
-            replied_at: nowStr
-        )
+    private struct MarkRepliedOnlyPayload: Encodable {
+        let is_replied: Bool
+        let replied_at: String?
+    }
 
-        let row: EngagementItemRow = try await client
-            .from("engagement_items")
-            .update(payload)
-            .eq("id", value: itemID)
-            .single()
-            .execute()
-            .value
+    private struct ClearRepliedPayload: Encodable {
+        let is_replied: Bool
+        let reply_text: String?
+        let replied_at: String?
+    }
+
+    func markReplied(itemID: UUID, isReplied: Bool) async throws -> EngagementItem {
+        let row: EngagementItemRow
+        if isReplied {
+            let nowStr = SupabaseService.supabaseTimestampFormatter.string(from: .now)
+            let payload = MarkRepliedOnlyPayload(is_replied: true, replied_at: nowStr)
+            row = try await client
+                .from("engagement_items")
+                .update(payload)
+                .eq("id", value: itemID)
+                .single()
+                .execute()
+                .value
+        } else {
+            let payload = ClearRepliedPayload(is_replied: false, reply_text: nil, replied_at: nil)
+            row = try await client
+                .from("engagement_items")
+                .update(payload)
+                .eq("id", value: itemID)
+                .single()
+                .execute()
+                .value
+        }
 
         return EngagementItem(
             id: row.id,

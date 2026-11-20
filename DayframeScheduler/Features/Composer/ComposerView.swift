@@ -12,6 +12,9 @@ struct ComposerView: View {
     var editingPost: Post? = nil
     var presetDate: Date? = nil
     var prefillIdea: Idea? = nil
+    /// Prefills a *new* post from an existing one (e.g. Re-Queue from
+    /// Analytics). Unlike `editingPost`, saving creates a separate post.
+    var templatePost: Post? = nil
     var onSaved: () -> Void
 
     @Environment(AppEnvironment.self) private var environment
@@ -45,7 +48,8 @@ struct ComposerView: View {
                     scheduleRepository: environment.scheduleRepository,
                     editingPost: editingPost,
                     presetDate: presetDate,
-                    prefillIdea: prefillIdea
+                    prefillIdea: prefillIdea,
+                    templatePost: templatePost
                 )
                 model = viewModel
                 await viewModel.load()
@@ -86,10 +90,12 @@ struct ComposerView: View {
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
             Button("Insert") {
-                if let model, !linkInput.isEmpty {
-                    appendSnippet(linkInput, model: model)
-                    linkInput = ""
+                let trimmed = linkInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let model, !trimmed.isEmpty {
+                    let normalized = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
+                    appendSnippet(normalized, model: model)
                 }
+                linkInput = ""
             }
             Button("Cancel", role: .cancel) { linkInput = "" }
         } message: {
@@ -489,14 +495,24 @@ struct ComposerView: View {
     }
 
     private func channelPicker(model: ComposerViewModel) -> some View {
-        VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
-            Text("Publish to Accounts")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(DayframeColor.textSecondary)
+        let availableChannels = model.channels.filter { $0.status == .connected && !$0.isPaused }
+        let hasPausedChannels = model.channels.contains { $0.status == .connected && $0.isPaused }
+        return VStack(alignment: .leading, spacing: DayframeSpacing.xs) {
+            HStack {
+                Text("Publish to Accounts")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DayframeColor.textSecondary)
+                Spacer()
+                if hasPausedChannels {
+                    Text("Paused channels hidden")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DayframeColor.textTertiary)
+                }
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DayframeSpacing.md) {
-                    ForEach(model.channels.filter { $0.status == .connected }) { channel in
+                    ForEach(availableChannels) { channel in
                         let isSelected = model.selectedChannelIDs.contains(channel.id)
                         Button {
                             model.toggleChannel(channel)

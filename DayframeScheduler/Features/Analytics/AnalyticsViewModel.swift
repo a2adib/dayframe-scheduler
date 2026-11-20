@@ -27,6 +27,7 @@ struct ConsistencyStreakInfo {
 final class AnalyticsViewModel {
     private let analyticsRepository: AnalyticsRepository
     private let channelRepository: ChannelRepository
+    private let postRepository: PostRepository?
 
     private(set) var dailyMetrics: [DailyMetrics] = []
     private(set) var topPosts: [TopPost] = []
@@ -37,25 +38,30 @@ final class AnalyticsViewModel {
     var selectedPlatform: Platform?
     var showsProPrompt = false
 
-    // Consistency streaks state
+    // Consistency streaks state (computed from published posts when postRepository is available)
     private(set) var streakInfo = ConsistencyStreakInfo(
-        publishedThisWeek: 4,
+        publishedThisWeek: 0,
         weeklyGoal: 5,
-        streakWeeks: 5,
+        streakWeeks: 0,
         days: [
-            WeekDayStreak(dayLetter: "M", isCompleted: true),
-            WeekDayStreak(dayLetter: "T", isCompleted: true),
-            WeekDayStreak(dayLetter: "W", isCompleted: true),
-            WeekDayStreak(dayLetter: "T", isCompleted: true),
+            WeekDayStreak(dayLetter: "M", isCompleted: false),
+            WeekDayStreak(dayLetter: "T", isCompleted: false),
+            WeekDayStreak(dayLetter: "W", isCompleted: false),
+            WeekDayStreak(dayLetter: "T", isCompleted: false),
             WeekDayStreak(dayLetter: "F", isCompleted: false),
             WeekDayStreak(dayLetter: "S", isCompleted: false),
             WeekDayStreak(dayLetter: "S", isCompleted: false),
         ]
     )
 
-    init(analyticsRepository: AnalyticsRepository, channelRepository: ChannelRepository) {
+    init(
+        analyticsRepository: AnalyticsRepository,
+        channelRepository: ChannelRepository,
+        postRepository: PostRepository? = nil
+    ) {
         self.analyticsRepository = analyticsRepository
         self.channelRepository = channelRepository
+        self.postRepository = postRepository
     }
 
     /// Aggregated reach per day across the selected channels.
@@ -71,7 +77,8 @@ final class AnalyticsViewModel {
     }
 
     var postsPerChannel: [ChannelPostCount] {
-        publishedPerChannel
+        guard let selectedPlatform else { return publishedPerChannel }
+        return publishedPerChannel.filter { $0.platform == selectedPlatform }
     }
 
     /// Percentage change of the second half of the range vs the first half.
@@ -114,6 +121,53 @@ final class AnalyticsViewModel {
         dailyMetrics = (try? await analyticsRepository.loadDailyMetrics(days: rangeDays)) ?? []
         topPosts = (try? await analyticsRepository.loadTopPosts(days: rangeDays, limit: 4)) ?? []
         publishedPerChannel = (try? await analyticsRepository.loadPublishedPerChannel(days: rangeDays)) ?? []
+        await refreshStreak()
+    }
+
+    private func refreshStreak() async {
+        let letters = ["M", "T", "W", "T", "F", "S", "S"]
+        guard let postRepository,
+              let posts = try? await postRepository.loadQueue() else { return }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2 // Monday
+        let now = Date.now
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: now) else { return }
+
+        let publishedDates = posts
+            .filter { $0.status == .published }
+            .compactMap { $0.publishedAt ?? $0.scheduledAt }
+
+        let thisWeekDates = publishedDates.filter { weekInterval.contains($0) }
+        var completedWeekdays: Set<Int> = []
+        for date in thisWeekDates {
+            // Convert Calendar weekday (Sun=1..Sat=7) to Mon=0..Sun=6
+            let wd = (calendar.component(.weekday, from: date) + 5) % 7
+            completedWeekdays.insert(wd)
+        }
+
+        let dayItems = (0..<7).map { idx in
+            WeekDayStreak(dayLetter: letters[idx], isCompleted: completedWeekdays.contains(idx))
+        }
+
+        var streakWeeks = thisWeekDates.isEmpty ? 0 : 1
+        var checkStart = weekInterval.start
+        while let prevStart = calendar.date(byAdding: .weekOfYear, value: -1, to: checkStart) {
+            let prevInterval = DateInterval(start: prevStart, end: checkStart)
+            if publishedDates.contains(where: { prevInterval.contains($0) }) {
+                streakWeeks += 1
+                checkStart = prevStart
+            } else {
+                break
+            }
+        }
+
+        streakInfo = ConsistencyStreakInfo(
+            publishedThisWeek: thisWeekDates.count,
+            weeklyGoal: 5,
+            streakWeeks: streakWeeks,
+            days: dayItems
+        )
     }
 
     /// Converts a TopPost back into a Post object to be pre-populated in the Composer for 1-Click Re-Queue.
